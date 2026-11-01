@@ -1,0 +1,1066 @@
+--- a/src/manager.c
++++ b/src/manager.c
+@@ -162,6 +162,13 @@
+     /* Delay after which resources will be cleaned up asynchronously
+      * upon execution of network_prov_mgr_stop_provisioning() */
+     uint32_t cleanup_delay;
++    uint32_t cleanup_token;
++    bool cleanup_running, cleanup_done, end_pending;
++    esp_err_t cleanup_error;
++    esp_event_handler_instance_t stop_event_instance;
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
++    esp_event_handler_instance_t wifi_event_instance, ip_event_instance;
++#endif
+     /* Scan status */
+     bool scanning;
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+@@ -206,6 +213,11 @@
+  * context data. This is allocated only once on first init
+  * and never deleted as network_prov_mgr is a singleton */
+ static SemaphoreHandle_t prov_ctx_lock = NULL;
++/* Protected by prov_ctx_lock; retained across init/deinit. */
++static bool s_deinitializing;
++static uint32_t s_cleanup_token;
++
++
+ 
+ /* Mode from the last network_prov_mgr_init() call.  Kept alive across deinit so
+  * that event handlers (e.g. NETWORK_PROV_DEINIT) can still query the mode after
+@@ -214,6 +226,18 @@
+ 
+ /* Pointer to provisioning context data */
+ static struct network_prov_mgr_ctx *prov_ctx;
++
++static bool begin_cleanup_session(void)
++{
++    /* Never reuse a token while a delayed timer callback could still exist. */
++    if (s_cleanup_token == UINT32_MAX) {
++        return false;
++    }
++    prov_ctx->cleanup_token = ++s_cleanup_token;
++    prov_ctx->cleanup_running = prov_ctx->cleanup_done = prov_ctx->end_pending = false;
++    prov_ctx->cleanup_error = ESP_OK;
++    return true;
++}
+ 
+ /* In SESSION_ONLY mode, any non-blocking stop (auto-stop on completion,
+  * network_prov_mgr_done(), network_prov_mgr_stop_provisioning()) keeps the
+@@ -297,9 +321,12 @@
+             app_cb(app_data, event_id, event_data);
+         }
+ 
++        /* BLE request callbacks must not wait for the loop that can be
++         * stopping that very host. Synchronous callbacks above are preserved. */
++        int wait = (event_id == NETWORK_PROV_SET_WIFI_STA_CONFIG ||
++                    event_id == NETWORK_PROV_WIFI_CRED_RECV) ? 0 : portMAX_DELAY;
+         if (esp_event_post(NETWORK_PROV_EVENT, event_id,
+-                           event_data, event_data_size,
+-                           portMAX_DELAY) != ESP_OK) {
++                           event_data, event_data_size, wait) != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to post event %d to default event loop", event_id);
+         }
+ 
+@@ -513,10 +540,80 @@
+ static void network_prov_mgr_event_handler_internal(void *arg, esp_event_base_t event_base,
+                                                     int32_t event_id, void *event_data);
+ 
++/* A held instance requires a live default loop. Violating that ownership is
++ * fatal; never publish END or discard the handle after failed unregistration. */
++static void unregister_service_instance(esp_event_base_t base, int32_t id,
++                                        esp_event_handler_instance_t *instance)
++{
++    if (*instance) {
++        ESP_ERROR_CHECK(esp_event_handler_instance_unregister(base, id, *instance));
++        *instance = NULL;
++    }
++}
++
++/* Only after transport drainage (or removal of provisioning endpoints from a
++ * kept session). Partial start failures may own any subset of these objects. */
++static void free_provisioning_data(void)
++{
++    if (prov_ctx->network_prov_handlers) {
++        free(prov_ctx->network_prov_handlers->ctx);
++        free(prov_ctx->network_prov_handlers);
++        prov_ctx->network_prov_handlers = NULL;
++    }
++    if (prov_ctx->network_scan_handlers) {
++        free(prov_ctx->network_scan_handlers->ctx);
++        free(prov_ctx->network_scan_handlers);
++        prov_ctx->network_scan_handlers = NULL;
++    }
++    free(prov_ctx->network_ctrl_handlers);
++    prov_ctx->network_ctrl_handlers = NULL;
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
++    for (uint16_t channel = 0; channel < 14; channel++) {
++        free(prov_ctx->ap_list[channel]);
++        prov_ctx->ap_list[channel] = NULL;
++    }
++    prov_ctx->scanning = false;
++    for (uint8_t i = 0; i < MAX_SCAN_RESULTS; i++) {
++        prov_ctx->ap_list_sorted[i] = NULL;
++    }
++#endif
++}
++
++static void stop_service_timers(void)
++{
++    if (prov_ctx->autostop_timer) {
++        esp_timer_stop(prov_ctx->autostop_timer);
++        esp_timer_delete(prov_ctx->autostop_timer);
++        prov_ctx->autostop_timer = NULL;
++    }
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
++    if (prov_ctx->wifi_connect_timer) {
++        esp_timer_stop(prov_ctx->wifi_connect_timer);
++        esp_timer_delete(prov_ctx->wifi_connect_timer);
++        prov_ctx->wifi_connect_timer = NULL;
++    }
++#endif
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
++    if (prov_ctx->thread_timeout_timer) {
++        esp_timer_stop(prov_ctx->thread_timeout_timer);
++        esp_timer_delete(prov_ctx->thread_timeout_timer);
++        prov_ctx->thread_timeout_timer = NULL;
++    }
++#endif
++    if (prov_ctx->cleanup_delay_timer) {
++        esp_timer_stop(prov_ctx->cleanup_delay_timer);
++        esp_timer_delete(prov_ctx->cleanup_delay_timer);
++        prov_ctx->cleanup_delay_timer = NULL;
++    }
++}
++
+ static esp_err_t network_prov_mgr_start_service(const char *service_name, const char *service_key)
+ {
+     const network_prov_scheme_t *scheme = &prov_ctx->mgr_config.scheme;
+     esp_err_t ret;
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
++    bool thread_registered = false;
++#endif
+ 
+     prov_ctx->pc = protocomm_new();
+     if (prov_ctx->pc == NULL) {
+@@ -571,10 +668,7 @@
+     }
+     if (ret != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to set security endpoint");
+-        scheme->prov_stop(prov_ctx->pc);
+-        protocomm_delete(prov_ctx->pc);
+-        prov_ctx->pc = NULL;
+-        return ret;
++        goto rollback;
+     }
+ 
+     /* Set version information / capabilities of provisioning service and application */
+@@ -587,22 +681,17 @@
+     }
+     if (ret != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to set version endpoint");
+-        scheme->prov_stop(prov_ctx->pc);
+-        protocomm_delete(prov_ctx->pc);
+-        prov_ctx->pc = NULL;
+-        return ret;
++        goto rollback;
+     }
+ 
+     if (prov_ctx->prov_endpoints_enabled) {
+         /* Register the three provisioning endpoint handlers */
+-        prov_ctx->network_prov_handlers = malloc(sizeof(network_prov_config_handlers_t));
++        prov_ctx->network_prov_handlers = calloc(1, sizeof(network_prov_config_handlers_t));
+         ret = get_network_prov_handlers(prov_ctx->network_prov_handlers);
+         if (ret != ESP_OK) {
+             ESP_LOGD(TAG, "Failed to allocate memory for provisioning handlers");
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ESP_ERR_NO_MEM;
++            ret = ESP_ERR_NO_MEM;
++            goto rollback;
+         }
+ 
+         ret = protocomm_add_endpoint(prov_ctx->pc, "prov-config",
+@@ -610,22 +699,15 @@
+                                      prov_ctx->network_prov_handlers);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to set provisioning endpoint");
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
+-        }
+-
+-        prov_ctx->network_scan_handlers = malloc(sizeof(network_prov_scan_handlers_t));
++            goto rollback;
++        }
++
++        prov_ctx->network_scan_handlers = calloc(1, sizeof(network_prov_scan_handlers_t));
+         ret = get_network_scan_handlers(prov_ctx->network_scan_handlers);
+         if (ret != ESP_OK) {
+             ESP_LOGD(TAG, "Failed to allocate memory for network scan handlers");
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ESP_ERR_NO_MEM;
++            ret = ESP_ERR_NO_MEM;
++            goto rollback;
+         }
+ 
+         ret = protocomm_add_endpoint(prov_ctx->pc, "prov-scan",
+@@ -633,23 +715,15 @@
+                                      prov_ctx->network_scan_handlers);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to set network scan endpoint");
+-            free(prov_ctx->network_scan_handlers);
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
+-        }
+-
+-        prov_ctx->network_ctrl_handlers = malloc(sizeof(network_ctrl_handlers_t));
++            goto rollback;
++        }
++
++        prov_ctx->network_ctrl_handlers = calloc(1, sizeof(network_ctrl_handlers_t));
+         ret = get_network_ctrl_handlers(prov_ctx->network_ctrl_handlers);
+         if (ret != ESP_OK) {
+             ESP_LOGD(TAG, "Failed to allocate memory for network ctrl handlers");
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ESP_ERR_NO_MEM;
++            ret = ESP_ERR_NO_MEM;
++            goto rollback;
+         }
+ 
+         ret = protocomm_add_endpoint(prov_ctx->pc, "prov-ctrl",
+@@ -657,41 +731,22 @@
+                                      prov_ctx->network_ctrl_handlers);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to set network ctrl endpoint");
+-            free(prov_ctx->network_ctrl_handlers);
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
++            goto rollback;
+         }
+ 
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+-        ret = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
+-                                         network_prov_mgr_event_handler_internal, NULL);
++        ret = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
++                                         network_prov_mgr_event_handler_internal, NULL, &prov_ctx->wifi_event_instance);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to register WiFi event handler");
+-            free(prov_ctx->network_scan_handlers);
+-            free(prov_ctx->network_ctrl_handlers);
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
+-        }
+-
+-        ret = esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+-                                         network_prov_mgr_event_handler_internal, NULL);
++            goto rollback;
++        }
++
++        ret = esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
++                                         network_prov_mgr_event_handler_internal, NULL, &prov_ctx->ip_event_instance);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to register IP event handler");
+-            esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+-                                         network_prov_mgr_event_handler_internal);
+-            free(prov_ctx->network_scan_handlers);
+-            free(prov_ctx->network_ctrl_handlers);
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
++            goto rollback;
+         }
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+ 
+@@ -700,45 +755,53 @@
+                                          network_prov_mgr_event_handler_internal, NULL);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to register OpenThread event handler");
+-            free(prov_ctx->network_scan_handlers);
+-            free(prov_ctx->network_ctrl_handlers);
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
+-        }
++            goto rollback;
++        }
++        thread_registered = true;
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+ 
+         /* Used by the asynchronous stop path, which only runs when provisioning
+          * is enabled: without it the service is never stopped, only deinit()ed */
+-        ret = esp_event_handler_register(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP,
+-                                         network_prov_mgr_event_handler_internal, NULL);
++        ret = esp_event_handler_instance_register(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP,
++                                         network_prov_mgr_event_handler_internal, NULL, &prov_ctx->stop_event_instance);
+         if (ret != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to register provisioning event handler");
+-#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+-            esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+-                                         network_prov_mgr_event_handler_internal);
+-            esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP,
+-                                         network_prov_mgr_event_handler_internal);
+-#endif
+-#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+-            esp_event_handler_unregister(OPENTHREAD_EVENT, ESP_EVENT_ANY_ID,
+-                                         network_prov_mgr_event_handler_internal);
+-#endif
+-            free(prov_ctx->network_scan_handlers);
+-            free(prov_ctx->network_ctrl_handlers);
+-            free(prov_ctx->network_prov_handlers);
+-            scheme->prov_stop(prov_ctx->pc);
+-            protocomm_delete(prov_ctx->pc);
+-            prov_ctx->pc = NULL;
+-            return ret;
++            goto rollback;
+         }
+     } /* prov_endpoints_enabled */
+ 
+     ESP_LOGI(TAG, "Provisioning started with service name : %s ",
+              service_name ? service_name : "<NULL>");
+     return ESP_OK;
++
++rollback:
++    /* STARTING pins ctx while the manager lock is released. BLE can already
++     * be serving any endpoint registered above, even before event registration. */
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
++    unregister_service_instance(WIFI_EVENT, ESP_EVENT_ANY_ID, &prov_ctx->wifi_event_instance);
++    unregister_service_instance(IP_EVENT, IP_EVENT_STA_GOT_IP, &prov_ctx->ip_event_instance);
++#endif
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
++    if (thread_registered) {
++        esp_event_handler_unregister(OPENTHREAD_EVENT, ESP_EVENT_ANY_ID,
++                                     network_prov_mgr_event_handler_internal);
++    }
++#endif
++    unregister_service_instance(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP, &prov_ctx->stop_event_instance);
++    esp_err_t stopped = scheme->prov_stop(prov_ctx->pc);
++    if (stopped == ESP_OK) {
++        free_provisioning_data();
++        protocomm_delete(prov_ctx->pc);
++        prov_ctx->pc = NULL;
++    }
++    ACQUIRE_LOCK(prov_ctx_lock);
++    prov_ctx->cleanup_error = stopped;
++    if (stopped == ESP_OK) {
++        free_sec_params();
++    }
++    /* The caller still owns STARTING until timers and Wi-Fi bookkeeping finish. */
++    RELEASE_LOCK(prov_ctx_lock);
++    return ret;
+ }
+ 
+ esp_err_t network_prov_mgr_endpoint_create(const char *ep_name)
+@@ -809,106 +872,84 @@
+ 
+ static void prov_stop_and_notify(bool is_async)
+ {
+-    esp_event_handler_unregister(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP,
+-                                 network_prov_mgr_event_handler_internal);
+-
+-    if (prov_ctx->cleanup_delay_timer) {
+-        esp_timer_stop(prov_ctx->cleanup_delay_timer);
+-        esp_timer_delete(prov_ctx->cleanup_delay_timer);
+-        prov_ctx->cleanup_delay_timer = NULL;
+-    }
+-
+     network_prov_cb_func_t app_cb = prov_ctx->mgr_config.app_event_handler.event_cb;
+     void *app_data = prov_ctx->mgr_config.app_event_handler.user_data;
+-
+     network_prov_cb_func_t scheme_cb = prov_ctx->mgr_config.scheme_event_handler.event_cb;
+     void *scheme_data = prov_ctx->mgr_config.scheme_event_handler.user_data;
+-
+-    /* This delay is so that the client side app is notified first
+-     * and then the provisioning is stopped. Generally 1000ms is enough. */
+-    if (!is_async) {
+-        uint32_t cleanup_delay = prov_ctx->cleanup_delay > 100 ? prov_ctx->cleanup_delay : 100;
+-        vTaskDelay(cleanup_delay / portTICK_PERIOD_MS);
+-    }
+-
+-    bool prov_enabled = prov_ctx->prov_endpoints_enabled;
+     bool keep_transport = keep_transport_on_stop(!is_async);
++    prov_ctx->cleanup_running = true;
++    RELEASE_LOCK(prov_ctx_lock);
++    esp_err_t stopped = ESP_OK;
++    if (!prov_ctx->cleanup_done) {
++        if (!is_async) {
++            uint32_t delay = prov_ctx->cleanup_delay > 100 ? prov_ctx->cleanup_delay : 100;
++            vTaskDelay(delay / portTICK_PERIOD_MS);
++        }
++        bool prov_enabled = prov_ctx->prov_endpoints_enabled;
++        if (prov_ctx->pc && !keep_transport) {
++            stopped = prov_ctx->mgr_config.scheme.prov_stop(prov_ctx->pc);
++        }
++        if (stopped == ESP_OK) {
++            if (prov_ctx->pc) {
++                if (prov_enabled) {
++                    protocomm_remove_endpoint(prov_ctx->pc, "prov-ctrl");
++                    protocomm_remove_endpoint(prov_ctx->pc, "prov-scan");
++                    protocomm_remove_endpoint(prov_ctx->pc, "prov-config");
++                }
++                if (keep_transport) {
++                    prov_ctx->session_pc = prov_ctx->pc;
++                    if (prov_enabled) {
++                        prov_ctx->prov_endpoints_enabled = false;
++                        protocomm_unset_version(prov_ctx->pc, "proto-ver");
++                        char *version = network_prov_get_info_json();
++                        if (!version || protocomm_set_version(prov_ctx->pc, "proto-ver", version) != ESP_OK) {
++                            ESP_LOGE(TAG, "Failed to update version endpoint");
++                        }
++                        free(version);
++                    }
++                } else {
++                    protocomm_unset_security(prov_ctx->pc, "prov-session");
++                    protocomm_unset_version(prov_ctx->pc, "proto-ver");
++                    protocomm_delete(prov_ctx->pc);
++                }
++                prov_ctx->pc = NULL;
++            }
++            free_provisioning_data();
++#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
++            if (prov_enabled) {
++                esp_wifi_set_mode(WIFI_MODE_STA);
++            }
++#endif
++        }
++    }
++    /* Timer/event callbacks already copied before deletion are gated by token
++     * and cleanup_error. No automatic path retries a failed transport stop. */
++    unregister_service_instance(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP, &prov_ctx->stop_event_instance);
++    stop_service_timers();
++    ACQUIRE_LOCK(prov_ctx_lock);
++    prov_ctx->cleanup_error = stopped;
++    prov_ctx->cleanup_running = false;
++    if (stopped != ESP_OK) {
++        prov_ctx->prov_state = NETWORK_PROV_STATE_STOPPING;
++        return;
++    }
+     if (!keep_transport) {
+-        /* Stop the transport before tearing down protocomm state */
+-        prov_ctx->mgr_config.scheme.prov_stop(prov_ctx->pc);
+-    }
+-
+-    if (prov_enabled) {
+-        protocomm_remove_endpoint(prov_ctx->pc, "prov-ctrl");
+-        protocomm_remove_endpoint(prov_ctx->pc, "prov-scan");
+-        protocomm_remove_endpoint(prov_ctx->pc, "prov-config");
+-    }
+-
+-    if (keep_transport) {
+-        /* SESSION_ONLY mode: keep the transport and the protocomm session
+-         * alive so the application can keep serving its own endpoints.
+-         * Stash the handle so deinit() can stop it. prov-session stays
+-         * registered on the transport. */
+-        prov_ctx->session_pc = prov_ctx->pc;
+-        if (prov_enabled) {
+-            /* The provisioning endpoints are gone, so re-publish proto-ver
+-             * without the provisioning capabilities */
+-            prov_ctx->prov_endpoints_enabled = false;
+-            protocomm_unset_version(prov_ctx->pc, "proto-ver");
+-            char *version_str = network_prov_get_info_json();
+-            if (!version_str ||
+-                    protocomm_set_version(prov_ctx->pc, "proto-ver", version_str) != ESP_OK) {
+-                ESP_LOGE(TAG, "Failed to update version endpoint");
+-            }
+-            free(version_str);
+-        }
+-    } else {
+-        protocomm_unset_security(prov_ctx->pc, "prov-session");
+-        protocomm_unset_version(prov_ctx->pc, "proto-ver");
+-
+-        /* Delete protocomm instance */
+-        protocomm_delete(prov_ctx->pc);
+-    }
+-    prov_ctx->pc = NULL;
+-
+-    if (prov_enabled) {
+-        free(prov_ctx->network_prov_handlers->ctx);
+-        free(prov_ctx->network_prov_handlers);
+-        prov_ctx->network_prov_handlers = NULL;
+-
+-        free(prov_ctx->network_scan_handlers->ctx);
+-        free(prov_ctx->network_scan_handlers);
+-        prov_ctx->network_scan_handlers = NULL;
+-
+-        free(prov_ctx->network_ctrl_handlers);
+-        prov_ctx->network_ctrl_handlers = NULL;
+-    }
+-#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+-    if (prov_enabled) {
+-        /* Switch device to Wi-Fi STA mode irrespective of
+-         * whether provisioning was completed or not */
+-        esp_wifi_set_mode(WIFI_MODE_STA);
+-    }
+-#endif
+-
+-    ESP_LOGI(TAG, "Provisioning stopped");
+-
+-    if (is_async) {
+-        /* NOTE: While calling this API in an async fashion,
+-         * the context lock prov_ctx_lock has already been taken
+-         */
+-        prov_ctx->prov_state = NETWORK_PROV_STATE_IDLE;
+-
+-        ESP_LOGD(TAG, "execute_event_cb : %d", NETWORK_PROV_END);
++        free_sec_params();
++    }
++    prov_ctx->cleanup_done = true;
++    prov_ctx->prov_state = NETWORK_PROV_STATE_IDLE;
++    if (is_async && prov_ctx->end_pending) {
++        prov_ctx->end_pending = false;
++        RELEASE_LOCK(prov_ctx_lock);
++        esp_event_post(NETWORK_PROV_EVENT, NETWORK_PROV_END, NULL, 0, 0);
+         if (scheme_cb) {
+             scheme_cb(scheme_data, NETWORK_PROV_END, NULL);
+         }
+         if (app_cb) {
+             app_cb(app_data, NETWORK_PROV_END, NULL);
+         }
+-        if (esp_event_post(NETWORK_PROV_EVENT, NETWORK_PROV_END, NULL, 0, portMAX_DELAY) != ESP_OK) {
+-            ESP_LOGE(TAG, "Failed to post event THREAD_PROV_END");
+-        }
++        /* Synchronous END can replace ctx. Old stack only takes/releases lock. */
++        ACQUIRE_LOCK(prov_ctx_lock);
+     }
+ }
+ 
+@@ -982,31 +1023,13 @@
+     ESP_LOGD(TAG, "Stopping provisioning");
+     prov_ctx->prov_state = NETWORK_PROV_STATE_STOPPING;
+ 
+-    /* Free proof of possession, unless the transport is kept alive: the
+-     * security handler then stays active so that clients can establish fresh
+-     * sessions, and freeing the PoP would leave a dangling pointer inside the
+-     * security1 context. deinit() frees it in that case. */
+-    if (!keep_transport_on_stop(blocking)) {
+-        free_sec_params();
+-    }
+-
+     if (prov_ctx->prov_endpoints_enabled) {
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+-        /* Delete all scan results */
+-        for (uint16_t channel = 0; channel < 14; channel++) {
+-            free(prov_ctx->ap_list[channel]);
+-            prov_ctx->ap_list[channel] = NULL;
+-        }
+-        prov_ctx->scanning = false;
+-        for (uint8_t i = 0; i < MAX_SCAN_RESULTS; i++) {
+-            prov_ctx->ap_list_sorted[i] = NULL;
+-        }
+-
+         /* Remove event handler */
+-        esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+-                                     network_prov_mgr_event_handler_internal);
+-        esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP,
+-                                     network_prov_mgr_event_handler_internal);
++        RELEASE_LOCK(prov_ctx_lock);
++        unregister_service_instance(WIFI_EVENT, ESP_EVENT_ANY_ID, &prov_ctx->wifi_event_instance);
++        unregister_service_instance(IP_EVENT, IP_EVENT_STA_GOT_IP, &prov_ctx->ip_event_instance);
++        ACQUIRE_LOCK(prov_ctx_lock);
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+ 
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+@@ -1021,18 +1044,17 @@
+         prov_ctx->scan_result_count = 0;
+ 
+         /* Remove event handler */
++        RELEASE_LOCK(prov_ctx_lock);
+         esp_event_handler_unregister(OPENTHREAD_EVENT, ESP_EVENT_ANY_ID,
+                                      network_prov_mgr_event_handler_internal);
++        ACQUIRE_LOCK(prov_ctx_lock);
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+     } /* prov_endpoints_enabled */
+ 
+     if (blocking) {
+         /* Run the cleanup without launching a separate task. Also the
+          * NETWORK_PROV_END event is not emitted in this case */
+-        RELEASE_LOCK(prov_ctx_lock);
+         prov_stop_and_notify(false);
+-        ACQUIRE_LOCK(prov_ctx_lock);
+-        prov_ctx->prov_state = NETWORK_PROV_STATE_IDLE;
+     } else {
+         /* Launch cleanup timer to perform the cleanup asynchronously.
+          * It is important to do this asynchronously because, there are
+@@ -1041,7 +1063,7 @@
+          * network_prov_mgr_stop_provisioning(), like when it is called
+          * inside a protocomm handler */
+         uint64_t cleanup_delay_ms = prov_ctx->cleanup_delay > 100 ? prov_ctx->cleanup_delay : 100;
+-        esp_timer_start_once(prov_ctx->cleanup_delay_timer, cleanup_delay_ms * 1000U);
++        esp_timer_start_periodic(prov_ctx->cleanup_delay_timer, cleanup_delay_ms * 1000U);
+         ESP_LOGD(TAG, "Provisioning scheduled for stopping");
+     }
+     return true;
+@@ -1050,12 +1072,27 @@
+ /* Task spawned by timer callback */
+ static void stop_prov_timer_cb(void *arg)
+ {
+-    network_prov_mgr_stop_provisioning();
++    ACQUIRE_LOCK(prov_ctx_lock);
++    if (prov_ctx && !s_deinitializing && !prov_ctx->cleanup_error &&
++            prov_ctx->cleanup_token == (uint32_t)(uintptr_t)arg) {
++        network_prov_mgr_stop_service(false);
++    }
++    RELEASE_LOCK(prov_ctx_lock);
+ }
+ 
+ static void cleanup_delay_timer_cb(void *arg)
+ {
+-    esp_err_t ret = esp_event_post(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP, NULL, 0, pdMS_TO_TICKS(100));
++    uint32_t token = (uint32_t)(uintptr_t)arg;
++    ACQUIRE_LOCK(prov_ctx_lock);
++    bool pending = prov_ctx && prov_ctx->cleanup_token == token &&
++                   prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING &&
++                   !prov_ctx->cleanup_error && !prov_ctx->cleanup_running;
++    RELEASE_LOCK(prov_ctx_lock);
++    if (!pending) {
++        return;
++    }
++    esp_err_t ret = esp_event_post(NETWORK_PROV_MGR_PVT_EVENT, NETWORK_PROV_MGR_STOP,
++                                   &token, sizeof(token), 0);
+     if (ret != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to post NETWORK_PROV_MGR_STOP event! %d %s", ret, esp_err_to_name(ret));
+     }
+@@ -1287,7 +1324,7 @@
+     }
+     ACQUIRE_LOCK(prov_ctx_lock);
+ 
+-    if (!prov_ctx) {
++    if (!prov_ctx || prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING) {
+         ESP_LOGE(TAG, "Provisioning manager not initialized");
+         RELEASE_LOCK(prov_ctx_lock);
+         return ESP_ERR_INVALID_STATE;
+@@ -1366,7 +1403,7 @@
+     }
+ 
+     ACQUIRE_LOCK(prov_ctx_lock);
+-    if (!prov_ctx) {
++    if (!prov_ctx || prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING) {
+         ESP_LOGE(TAG, "Provisioning manager not initialized");
+         RELEASE_LOCK(prov_ctx_lock);
+         return scan_finished;
+@@ -1386,7 +1423,7 @@
+     }
+ 
+     ACQUIRE_LOCK(prov_ctx_lock);
+-    if (!prov_ctx) {
++    if (!prov_ctx || prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING) {
+         ESP_LOGE(TAG, "Provisioning manager not initialized");
+         RELEASE_LOCK(prov_ctx_lock);
+         return rval;
+@@ -1411,7 +1448,7 @@
+     }
+ 
+     ACQUIRE_LOCK(prov_ctx_lock);
+-    if (!prov_ctx) {
++    if (!prov_ctx || prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING) {
+         ESP_LOGE(TAG, "Provisioning manager not initialized");
+         RELEASE_LOCK(prov_ctx_lock);
+         return rval;
+@@ -1525,9 +1562,13 @@
+ 
+ static void wifi_connect_timer_cb(void *arg)
+ {
+-    if (esp_wifi_connect() != ESP_OK) {
++    ACQUIRE_LOCK(prov_ctx_lock);
++    if (prov_ctx && prov_ctx->cleanup_token == (uint32_t)(uintptr_t)arg &&
++            prov_ctx->prov_state == NETWORK_PROV_STATE_CRED_RECV &&
++            esp_wifi_connect() != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to connect Wi-Fi");
+     }
++    RELEASE_LOCK(prov_ctx_lock);
+ }
+ 
+ esp_err_t network_prov_mgr_configure_wifi_sta(wifi_config_t *wifi_cfg)
+@@ -1538,7 +1579,7 @@
+     }
+ 
+     ACQUIRE_LOCK(prov_ctx_lock);
+-    if (!prov_ctx) {
++    if (!prov_ctx || prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING) {
+         ESP_LOGE(TAG, "Invalid state of Provisioning app");
+         RELEASE_LOCK(prov_ctx_lock);
+         return ESP_FAIL;
+@@ -2019,6 +2060,19 @@
+      * then provisioning manager is not running, therefore
+      * return with error to allow the global handler to act */
+     if (!prov_ctx) {
++        RELEASE_LOCK(prov_ctx_lock);
++        return;
++    }
++    if (event_base == NETWORK_PROV_MGR_PVT_EVENT && event_id == NETWORK_PROV_MGR_STOP) {
++        if (event_data && *(const uint32_t *)event_data == prov_ctx->cleanup_token &&
++                prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING && !prov_ctx->cleanup_running &&
++                !prov_ctx->cleanup_error && !prov_ctx->cleanup_done) {
++            prov_stop_and_notify(true);
++        }
++        RELEASE_LOCK(prov_ctx_lock);
++        return;
++    }
++    if (prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING) {
+         RELEASE_LOCK(prov_ctx_lock);
+         return;
+     }
+@@ -2140,9 +2194,6 @@
+ 
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+ 
+-    if (event_base == NETWORK_PROV_MGR_PVT_EVENT && event_id == NETWORK_PROV_MGR_STOP) {
+-        prov_stop_and_notify(true);
+-    }
+ 
+     RELEASE_LOCK(prov_ctx_lock);
+ }
+@@ -2185,7 +2236,7 @@
+     }
+ 
+     ACQUIRE_LOCK(prov_ctx_lock);
+-    if (prov_ctx) {
++    if (prov_ctx || s_deinitializing) {
+         ESP_LOGE(TAG, "Provisioning manager already initialized");
+         RELEASE_LOCK(prov_ctx_lock);
+         return ESP_ERR_INVALID_STATE;
+@@ -2297,106 +2348,101 @@
+     RELEASE_LOCK(prov_ctx_lock);
+ }
+ 
++esp_err_t network_prov_mgr_get_cleanup_error(void)
++{
++    if (!prov_ctx_lock) {
++        return ESP_OK;
++    }
++    ACQUIRE_LOCK(prov_ctx_lock);
++    esp_err_t error = prov_ctx ? prov_ctx->cleanup_error : ESP_OK;
++    RELEASE_LOCK(prov_ctx_lock);
++    return error;
++}
++
+ esp_err_t network_prov_mgr_deinit(void)
+ {
+-    esp_err_t ret = ESP_FAIL;
+-
+-    if (!prov_ctx_lock) {
+-        ESP_LOGW(TAG, "Provisioning manager not initialized");
++    if (!prov_ctx_lock) {
+         return ESP_OK;
+     }
+-
+-    ACQUIRE_LOCK(prov_ctx_lock);
+-
+-    /* This will do one of these:
+-     * 1) if found running, stop the provisioning service (returns true)
+-     * 2) if service was already in the process of termination, this will
+-     *    wait till the service is stopped (returns false)
+-     * 3) if service was not running, this will return immediately (returns false)
+-     */
+-    bool service_was_running = network_prov_mgr_stop_service(1);
+-
+-    /* If service was not running, its also possible that manager
+-     * was not even initialized */
+-    if (!service_was_running && !prov_ctx) {
+-        ESP_LOGD(TAG, "Manager already de-initialized");
+-        RELEASE_LOCK(prov_ctx_lock);
+-        vSemaphoreDelete(prov_ctx_lock);
+-        prov_ctx_lock = NULL;
++    ACQUIRE_LOCK(prov_ctx_lock);
++    if (s_deinitializing || (prov_ctx &&
++            (prov_ctx->prov_state == NETWORK_PROV_STATE_STARTING || prov_ctx->cleanup_running ||
++             (prov_ctx->prov_state == NETWORK_PROV_STATE_STOPPING && !prov_ctx->cleanup_error)))) {
++        RELEASE_LOCK(prov_ctx_lock);
++        return ESP_ERR_INVALID_STATE;
++    }
++    s_deinitializing = true;
++    if (!prov_ctx) {
++        s_deinitializing = false;
++        RELEASE_LOCK(prov_ctx_lock);
+         return ESP_OK;
+     }
+-
++    if (prov_ctx->cleanup_error) {
++        /* Only this explicit call can retry a recorded failure, once. */
++        prov_ctx->cleanup_error = ESP_OK;
++        if (prov_ctx->pc) {
++            prov_stop_and_notify(false);
++        }
++    } else {
++        network_prov_mgr_stop_service(true);
++    }
++    esp_err_t ret = prov_ctx->cleanup_error;
++    if (ret != ESP_OK) {
++        goto retained;
++    }
+     if (prov_ctx->session_pc) {
+-        /* SESSION_ONLY mode: the transport was kept alive after provisioning
+-         * stopped. Tear it down now that the manager is being destroyed.
+-         * As in the blocking stop path, release the lock meanwhile: stopping
+-         * the transport waits for the BLE host task, which may be inside an
+-         * application endpoint handler that is waiting for this very lock. */
+-        protocomm_t *session_pc = prov_ctx->session_pc;
+-        esp_err_t (*prov_stop)(protocomm_t *) = prov_ctx->mgr_config.scheme.prov_stop;
+-        prov_ctx->session_pc = NULL;
+         prov_ctx->prov_state = NETWORK_PROV_STATE_STOPPING;
+-        RELEASE_LOCK(prov_ctx_lock);
+-        prov_stop(session_pc);
+-        protocomm_delete(session_pc);
++        prov_ctx->cleanup_running = true;
++        RELEASE_LOCK(prov_ctx_lock);
++        ret = prov_ctx->mgr_config.scheme.prov_stop(prov_ctx->session_pc);
++        if (ret == ESP_OK) {
++            protocomm_delete(prov_ctx->session_pc);
++            prov_ctx->session_pc = NULL;
++        }
+         ACQUIRE_LOCK(prov_ctx_lock);
++        prov_ctx->cleanup_running = false;
++        prov_ctx->cleanup_error = ret;
++        if (ret != ESP_OK) {
++            goto retained;
++        }
+         prov_ctx->prov_state = NETWORK_PROV_STATE_IDLE;
+-        /* The security handler went away with the transport, so the PoP that
+-         * was kept for it can be freed now */
+-        free_sec_params();
+-    }
+-
++    }
++    assert(!prov_ctx->pc && !prov_ctx->session_pc);
++    free_sec_params();
+     app_info_free_all(prov_ctx->app_info);
+-
+     if (prov_ctx->prov_scheme_config) {
+         prov_ctx->mgr_config.scheme.delete_config(prov_ctx->prov_scheme_config);
+     }
+-
+-    /* Extract the callbacks to be called post deinit */
+     network_prov_cb_func_t app_cb = prov_ctx->mgr_config.app_event_handler.event_cb;
+     void *app_data = prov_ctx->mgr_config.app_event_handler.user_data;
+-
+     network_prov_cb_func_t scheme_cb = prov_ctx->mgr_config.scheme_event_handler.event_cb;
+     void *scheme_data = prov_ctx->mgr_config.scheme_event_handler.user_data;
+-
+-    /* Free manager context */
++    bool end_pending = prov_ctx->end_pending;
+     free(prov_ctx);
+     prov_ctx = NULL;
+     RELEASE_LOCK(prov_ctx_lock);
+-
+-    /* If a running service was also stopped during de-initialization
+-     * then NETWORK_PROV_END event also needs to be emitted before deinit */
+-    if (service_was_running) {
+-        ESP_LOGD(TAG, "execute_event_cb : %d", NETWORK_PROV_END);
+-        if (scheme_cb) {
+-            scheme_cb(scheme_data, NETWORK_PROV_END, NULL);
+-        }
+-        if (app_cb) {
+-            app_cb(app_data, NETWORK_PROV_END, NULL);
+-        }
+-        ret = esp_event_post(NETWORK_PROV_EVENT, NETWORK_PROV_END, NULL, 0, portMAX_DELAY);
+-        if (ret != ESP_OK) {
++    if (end_pending) {
++        if (scheme_cb) scheme_cb(scheme_data, NETWORK_PROV_END, NULL);
++        if (app_cb) app_cb(app_data, NETWORK_PROV_END, NULL);
++        if (esp_event_post(NETWORK_PROV_EVENT, NETWORK_PROV_END, NULL, 0, 0) != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to post event NETWORK_PROV_END");
+-            return ret;
+-        }
+-    }
+-
+-    ESP_LOGD(TAG, "execute_event_cb : %d", NETWORK_PROV_DEINIT);
+-
+-    /* Execute deinit event callbacks */
+-    if (scheme_cb) {
+-        scheme_cb(scheme_data, NETWORK_PROV_DEINIT, NULL);
+-    }
+-    if (app_cb) {
+-        app_cb(app_data, NETWORK_PROV_DEINIT, NULL);
+-    }
+-    if (esp_event_post(NETWORK_PROV_EVENT, NETWORK_PROV_DEINIT, NULL, 0, portMAX_DELAY) != ESP_OK) {
++        }
++    }
++    if (scheme_cb) scheme_cb(scheme_data, NETWORK_PROV_DEINIT, NULL);
++    if (app_cb) app_cb(app_data, NETWORK_PROV_DEINIT, NULL);
++    if (esp_event_post(NETWORK_PROV_EVENT, NETWORK_PROV_DEINIT, NULL, 0, 0) != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to post event NETWORK_PROV_DEINIT");
+     }
+-
+-    vSemaphoreDelete(prov_ctx_lock);
+-    prov_ctx_lock = NULL;
++    ACQUIRE_LOCK(prov_ctx_lock);
++    s_deinitializing = false;
++    RELEASE_LOCK(prov_ctx_lock);
+     return ESP_OK;
++
++retained:
++    /* Non-OK always means ctx and all still-used dependencies remain owned. */
++    s_deinitializing = false;
++    RELEASE_LOCK(prov_ctx_lock);
++    return ret;
+ }
+ 
+ esp_err_t network_prov_mgr_start_provisioning(network_prov_security_t security, const void *network_prov_sec_params,
+@@ -2430,6 +2476,10 @@
+     /* Update state so that parallel call to network_prov_mgr_start_provisioning()
+      * or network_prov_mgr_stop_provisioning() or network_prov_mgr_deinit() from another
+      * thread doesn't interfere with this process */
++    if (s_deinitializing || !begin_cleanup_session()) {
++        RELEASE_LOCK(prov_ctx_lock);
++        return ESP_ERR_INVALID_STATE;
++    }
+     prov_ctx->prov_state = NETWORK_PROV_STATE_STARTING;
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+     uint8_t restore_wifi_flag = 0;
+@@ -2518,7 +2568,7 @@
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+         esp_timer_create_args_t wifi_connect_timer_conf = {
+             .callback = wifi_connect_timer_cb,
+-            .arg = NULL,
++            .arg = (void *)(uintptr_t)prov_ctx->cleanup_token,
+             .dispatch_method = ESP_TIMER_TASK,
+             .name = "network_prov_wifi_connect_tm"
+         };
+@@ -2547,7 +2597,7 @@
+             /* Create timer object as a member of app data */
+             esp_timer_create_args_t autostop_timer_conf = {
+                 .callback = stop_prov_timer_cb,
+-                .arg = NULL,
++                .arg = (void *)(uintptr_t)prov_ctx->cleanup_token,
+                 .dispatch_method = ESP_TIMER_TASK,
+                 .name = "network_prov_autostop_tm"
+             };
+@@ -2556,9 +2606,11 @@
+                 ESP_LOGE(TAG, "Failed to create auto-stop timer");
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+                 esp_timer_delete(prov_ctx->wifi_connect_timer);
++                prov_ctx->wifi_connect_timer = NULL;
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+                 esp_timer_delete(prov_ctx->thread_timeout_timer);
++                prov_ctx->thread_timeout_timer = NULL;
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+                 goto err;
+             }
+@@ -2567,7 +2619,7 @@
+         /* Used by the asynchronous stop path, see network_prov_mgr_stop_service() */
+         esp_timer_create_args_t cleanup_delay_timer = {
+             .callback = cleanup_delay_timer_cb,
+-            .arg = NULL,
++            .arg = (void *)(uintptr_t)prov_ctx->cleanup_token,
+             .dispatch_method = ESP_TIMER_TASK,
+             .name = "cleanup_delay_tm"
+         };
+@@ -2577,15 +2629,18 @@
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+             if (prov_ctx->wifi_connect_timer) {
+                 esp_timer_delete(prov_ctx->wifi_connect_timer);
++                prov_ctx->wifi_connect_timer = NULL;
+             }
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+             if (prov_ctx->thread_timeout_timer) {
+                 esp_timer_delete(prov_ctx->thread_timeout_timer);
++                prov_ctx->thread_timeout_timer = NULL;
+             }
+ #endif // CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+             if (prov_ctx->autostop_timer) {
+                 esp_timer_delete(prov_ctx->autostop_timer);
++                prov_ctx->autostop_timer = NULL;
+             }
+             goto err;
+         }
+@@ -2597,29 +2652,12 @@
+      * handler when system events need to be handled */
+     RELEASE_LOCK(prov_ctx_lock);
+ 
+-    /* Start provisioning service */
++    /* Start provisioning service. The locked error tail deletes every timer. */
+     ret = network_prov_mgr_start_service(service_name, service_key);
+-    if (ret != ESP_OK) {
+-        if (prov_ctx->autostop_timer) {
+-            esp_timer_delete(prov_ctx->autostop_timer);
+-        }
+-#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+-        if (prov_ctx->wifi_connect_timer) {
+-            esp_timer_delete(prov_ctx->wifi_connect_timer);
+-        }
+-#endif
+-#ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_THREAD
+-        if (prov_ctx->thread_timeout_timer) {
+-            esp_timer_delete(prov_ctx->thread_timeout_timer);
+-        }
+-#endif
+-        if (prov_ctx->cleanup_delay_timer) {
+-            esp_timer_delete(prov_ctx->cleanup_delay_timer);
+-        }
+-    }
+     ACQUIRE_LOCK(prov_ctx_lock);
+     if (ret == ESP_OK) {
+         if (prov_ctx->prov_endpoints_enabled) {
++            prov_ctx->end_pending = true;
+             prov_ctx->prov_state = NETWORK_PROV_STATE_STARTED;
+         } else {
+             /* SESSION_ONLY mode without provisioning: there is no state machine
+@@ -2636,9 +2674,10 @@
+     }
+ 
+ err:
+-    prov_ctx->prov_state = NETWORK_PROV_STATE_IDLE;
++    stop_service_timers();
++    prov_ctx->prov_state = prov_ctx->cleanup_error ? NETWORK_PROV_STATE_STOPPING : NETWORK_PROV_STATE_IDLE;
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+-    if (restore_wifi_flag & WIFI_PROV_SETTING_BIT) {
++    if (!prov_ctx->cleanup_error && (restore_wifi_flag & WIFI_PROV_SETTING_BIT)) {
+         /* Restore current WiFi settings, since provisioning start has failed */
+         esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg_old);
+     }
+@@ -2669,7 +2708,9 @@
+      *    wait till the service is stopped (returns false)
+      * 3) if service was not running, this will return immediately (returns false)
+      */
+-    network_prov_mgr_stop_service(0);
++    if (!s_deinitializing) {
++        network_prov_mgr_stop_service(0);
++    }
+ 
+     RELEASE_LOCK(prov_ctx_lock);
+ }
+--- a/include/network_provisioning/manager.h
++++ b/include/network_provisioning/manager.h
+@@ -379,11 +379,17 @@
+  * then performs the de-initialization
+  *
+  * @return
+- *  - ESP_OK         : Success
+- *  - ESP_FAIL       : Failed to post event NETWORK_PROV_DEINIT or NETWORK_PROV_END
+- *  - ESP_ERR_NO_MEM : Out of memory (as may be returned by esp_event_post)
++ *  - ESP_OK : Manager and transport ownership released. Observation event post
++ *             failure does not change successful resource release.
++ *  - ESP_ERR_INVALID_STATE : Start/cleanup/deinit is already owned elsewhere.
++ *  - Other non-OK : Transport stop error; context and dependencies retained.
++ *
++ * A caller-controlled deinit retries a recorded stop failure exactly once.
+  */
+ esp_err_t network_prov_mgr_deinit(void);
++
++/* Read-only, no resource operations; ESP_OK if absent or cleanup has no error. */
++esp_err_t network_prov_mgr_get_cleanup_error(void);
+ 
+ #ifdef CONFIG_NETWORK_PROV_NETWORK_TYPE_WIFI
+ /**

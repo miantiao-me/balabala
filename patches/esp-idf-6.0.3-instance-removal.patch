@@ -1,0 +1,89 @@
+--- a/components/esp_event/esp_event.c
++++ b/components/esp_event/esp_event.c
+@@ -513,6 +513,14 @@
+         return ESP_ERR_NOT_FOUND;
+     }
+ 
++    if (!ctx->legacy) {
++        /* Dispatch still owns this node, including profiling after callbacks.
++         * Retire by instance identity without allocation or a cleanup post. */
++        handler_to_unregister->unregistered = true;
++        handler_to_unregister->deferred_instance_remove = true;
++        return ESP_OK;
++    }
++
+     if (handler_to_unregister->unregistered) {
+         /* the handler was found in a list but has already be marked
+          * as unregistered. It means an event was already created to
+@@ -533,6 +541,50 @@
+         ctx->handler_ctx = handler_ctx_copy;
+     }
+     return esp_event_post_to(ctx->loop, esp_event_handler_cleanup, 0, ctx, sizeof(esp_event_remove_handler_context_t), portMAX_DELAY);
++}
++
++/* Restart the search after each removal: empty id/base/loop ancestors may
++ * have been freed. Legacy nodes belong to their queued cleanup and are skipped. */
++static void remove_deferred_instances(esp_event_loop_instance_t *loop)
++{
++    esp_event_remove_handler_context_t ctx = {.loop = loop, .legacy = false};
++    while (true) {
++        esp_event_loop_node_t *loop_node;
++        esp_event_base_node_t *base_node;
++        esp_event_id_node_t *id_node;
++        esp_event_handler_node_t *handler;
++        SLIST_FOREACH(loop_node, &loop->loop_nodes, next) {
++            ctx.event_base = esp_event_any_base;
++            ctx.event_id = ESP_EVENT_ANY_ID;
++            SLIST_FOREACH(handler, &loop_node->handlers, next) {
++                if (handler->deferred_instance_remove) {
++                    goto remove;
++                }
++            }
++            SLIST_FOREACH(base_node, &loop_node->base_nodes, next) {
++                ctx.event_base = base_node->base;
++                ctx.event_id = ESP_EVENT_ANY_ID;
++                SLIST_FOREACH(handler, &base_node->handlers, next) {
++                    if (handler->deferred_instance_remove) {
++                        goto remove;
++                    }
++                }
++                SLIST_FOREACH(id_node, &base_node->id_nodes, next) {
++                    ctx.event_id = id_node->id;
++                    SLIST_FOREACH(handler, &id_node->handlers, next) {
++                        if (handler->deferred_instance_remove) {
++                            goto remove;
++                        }
++                    }
++                }
++            }
++        }
++        return;
++remove:
++        ctx.handler_ctx = handler->handler_ctx;
++        esp_err_t err = loop_remove_handler(&ctx);
++        assert(err == ESP_OK);
++    }
+ }
+ 
+ static bool event_loop_has_posts_in_flight(esp_event_loop_instance_t* loop)
+@@ -717,6 +769,10 @@
+                 }
+             }
+         }
++
++        /* All handler_execute/profiling accesses finished; reclaim before every
++         * mutex release, including the finite-tick exit below. */
++        remove_deferred_instances(loop);
+ 
+         esp_event_base_t base = post.base;
+         int32_t id = post.id;
+--- a/components/esp_event/private_include/esp_event_internal.h
++++ b/components/esp_event/private_include/esp_event_internal.h
+@@ -32,6 +32,7 @@
+ #endif
+     SLIST_ENTRY(esp_event_handler_node) next;                   /**< next event handler in the list */
+     bool unregistered;
++    bool deferred_instance_remove;                                 /**< instance retired by the active dispatch */
+ } esp_event_handler_node_t;
+ 
+ typedef SLIST_HEAD(esp_event_handler_instances, esp_event_handler_node) esp_event_handler_nodes_t;

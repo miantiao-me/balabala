@@ -1,0 +1,86 @@
+--- a/engine/core/src/lib.rs
++++ b/engine/core/src/lib.rs
+@@ -397,6 +397,17 @@
+     /// target's resolved raster density. The value is immutable so one Ui
+     /// cannot mix resources produced for different target contracts.
+     pub fn new_with_raster_density(raster_density: u32) -> Self {
++        Self::new_with_density_and_layout_capacity(raster_density, 16)
++    }
++
++    /// Hint for the initial solver projection; smaller hints still grow normally.
++    /// The caller counts projected nodes including the core root. SlotMap adds
++    /// its own sentinel, so the caller must not add one.
++    pub fn new_with_layout_capacity(nodes: usize) -> Self {
++        Self::new_with_density_and_layout_capacity(1, nodes)
++    }
++
++    fn new_with_density_and_layout_capacity(raster_density: u32, nodes: usize) -> Self {
+         assert!(
+             (1..=u8::MAX as u32).contains(&raster_density),
+             "raster density must be an integer from 1 through 255"
+@@ -409,7 +420,7 @@
+             anims: anim::Anims::new(),
+             timelines: Vec::new(),
+             physics: physics::Physics::new(),
+-            layout: layout::LayoutEngine::new(),
++            layout: layout::LayoutEngine::with_capacity(nodes),
+             auxiliary: None,
+             textures: Vec::new(),
+             tex_free: Vec::new(),
+@@ -436,6 +447,11 @@
+             paused: false,
+             step_pending: false,
+         }
++    }
++
++    /// Current primary solver projection size (not arena slots or sentinels).
++    pub fn layout_node_count(&self) -> usize {
++        self.layout.taffy.total_node_count()
+     }
+
+     /// Raster pixels per logical UI pixel for core-owned bitmap resources.
+--- a/engine/core/src/layout.rs
++++ b/engine/core/src/layout.rs
+@@ -188,8 +188,8 @@
+ }
+
+ /// A solver tree with taffy's rounding off: readback rounds (`rounded_rect`).
+-fn new_taffy() -> TaffyTree<MeasureCtx> {
+-    let mut taffy = TaffyTree::new();
++fn new_taffy(capacity: usize) -> TaffyTree<MeasureCtx> {
++    let mut taffy = TaffyTree::with_capacity(capacity);
+     taffy.disable_rounding();
+     taffy
+ }
+@@ -228,7 +228,7 @@
+     /// the original recursive builder on the next relayout.
+     #[cfg(feature = "counters")]
+     pub fn force_rebuild_for_validation(&mut self) {
+-        self.taffy = new_taffy();
++        self.taffy = new_taffy(16);
+         self.entries.clear();
+         self.style_dirty.clear();
+         for region in &mut self.regions {
+@@ -306,8 +306,12 @@
+     }
+
+     pub fn new() -> LayoutEngine {
++        Self::with_capacity(16)
++    }
++
++    pub fn with_capacity(nodes: usize) -> LayoutEngine {
+         LayoutEngine {
+-            taffy: new_taffy(),
++            taffy: new_taffy(nodes),
+             dirty: true,
+             style_dirty: Vec::new(),
+             regions: Vec::new(),
+@@ -1411,7 +1415,7 @@
+         .map(|node| (node.taffy, node.text_native))
+         .collect();
+     let mut counters = crate::counters::LayoutCounters::default();
+-    let mut taffy = new_taffy();
++    let mut taffy = new_taffy(16);
+     let mut out = Vec::new();
+     if let Some(root_slot) = tree.resolve(root_id) {
+         if let Some(root) = build(tree, styles, fonts, &mut taffy, root_slot, false, &mut counters) {

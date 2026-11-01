@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "file": "ngsl-headwords.txt",
+      "version": "NGSL 1.2 (2023)",
+      "url": "https://www.newgeneralservicelist.com/s/NGSL_12_alphabetized_description.txt",
+      "sha256": "8056a5252576ddc5a3c2e96b1422eb2bc7991bdc527ecb2e00181fadff51d9dc",
+      "license": "CC-BY-SA-4.0"
+    },
+    {
+      "file": "ngsl-supplement.csv",
+      "version": "NGSL 1.2 supplementary (52 rows)",
+      "url": "https://www.newgeneralservicelist.com/s/SUP_lemmatized.csv",
+      "sha256": "7bb4c76cbe43ae87240be4ac7ada370b9e1a0d9d631d8c4430138646965d03f6",
+      "license": "CC-BY-SA-4.0"
+    },
+    {
+      "file": "Unihan.zip",
+      "version": "Unicode 18.0.0",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/Unihan.zip",
+      "sha256": "4c93ea9c1f636451729a840978f1667a53886af37ba854fdcce109721c63d43e",
+      "license": "Unicode-3.0"
+    }
+  ],
+  "licenseEvidence": {
+    "ngsl": {
+      "url": "https://www.newgeneralservicelist.com/new-general-service-list",
+      "observed": "2026-10-31",
+      "quote": "New General Service List by Browne, C., Culligan, B., and Phillips, J. is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License."
+    },
+    "ccText": {
+      "url": "https://raw.githubusercontent.com/creativecommons/cc-legal-tools-data/a0dac18d1a773b4cdb7d8dd5d9bf4efab7901030/legacy/legalcode/by-sa_4.0.txt",
+      "sha256": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5"
+    },
+    "unicodeText": {
+      "url": "https://www.unicode.org/license.txt",
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    }
+  }
+}

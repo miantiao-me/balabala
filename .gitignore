@@ -1,0 +1,11 @@
+.DS_Store
+.pi/
+.tools/
+.cache/
+.build/
+build/
+dist/
+node_modules/
+__pycache__/
+*.pyc
+!tools/svg/bun.lock

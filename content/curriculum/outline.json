@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "targets": {"hanzi": 2200, "pinyin": 150, "english": 450, "math": 1200},
+  "gradePolicy": "项目主题编排；不是教材官方年级、不是逐题人工审校。汉字以人工维护的主题词收字，不能用GB2312或NGSL排序补齐。",
+  "dependencies": {
+    "hanzi": ["一年级：基础拼音与生活主题识字", "二年级：一年级识字、词语与观察表达", "三年级：前两年识字、阅读表达与跨科主题"],
+    "pinyin": ["全部集中在一年级；声调/单韵母、声母、复韵母、整体认读、拼读与规则依次练习；已有32卡作为复习起点"],
+    "english": ["一年级：日常实物和颜色的项目启蒙", "二年级：一年级词汇，家庭、数字、基本动作", "三年级：前两年词汇，时间、位置与课堂用语；适用年级由家长调整"],
+    "math": ["一年级：数认知→10以内→20以内→100以内→钱币与钟表", "二年级：加减→乘法口诀→除法→余数→混合运算与单位", "三年级：前两年运算→万以内加减→乘除→分数→周长质量→年月日"]
+  },
+  "math": [
+    {"grade":1,"kind":"small","title":"十以内加减","count":80},
+    {"grade":1,"kind":"carry","title":"二十以内进退位","count":100},
+    {"grade":1,"kind":"hundred","title":"百以内加减","count":120},
+    {"grade":1,"kind":"place","title":"数位与比较","count":28},
+    {"grade":1,"kind":"time-money","title":"钟表与钱币","count":40},
+    {"grade":2,"kind":"multiply","title":"表内乘法","count":81},
+    {"grade":2,"kind":"divide","title":"表内除法","count":81},
+    {"grade":2,"kind":"remainder","title":"除法与余数","count":70},
+    {"grade":2,"kind":"mixed","title":"混合运算","count":88},
+    {"grade":2,"kind":"length","title":"长度与图形","count":80},
+    {"grade":3,"kind":"thousand","title":"万以内加减","count":100},
+    {"grade":3,"kind":"large-multiply","title":"多位数乘除","count":120},
+    {"grade":3,"kind":"fraction","title":"认识分数","count":80},
+    {"grade":3,"kind":"perimeter","title":"周长与质量","count":60},
+    {"grade":3,"kind":"calendar","title":"年月日与计时","count":40}
+  ],
+  "retiredIds": {"english": ["english-01", "english-02", "english-03"]},
+  "retirementReason": "apple、pear、banana不在固定NGSL原形白名单；原水果示范停用，替换词使用新ID，旧ID不复用。完整课程保留已知卡进度，含退役卡的旧轮次结束。"
+}

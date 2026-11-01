@@ -1,0 +1,60 @@
+{
+  "commit": "fff9895c82d744c7237be8847347bdd1b07c6643",
+  "patch": "esp-idf-6.1-observer-notifications.patch",
+  "sha256": "cb8622f625bf92a2fb5d1a322cc08270a4d1e7c2dade9c2662584d830c177521",
+  "files": [
+    {
+      "path": "components/protocomm/src/transports/protocomm_nimble.c",
+      "before": "4c8e3aded8b64e6009ba151745ead45e57c248edc4f2e88112e5d07319faceb6",
+      "after": "d6b41129ca26e51ec5538acdc3d71972e68be44bd1a73cea7d01a8fd5572cedb"
+    },
+    {
+      "path": "components/protocomm/src/security/security1.c",
+      "before": "df380e21ceb4b611dbf57c44894b1ea98d4934523bef6bf27718511c54fb426c",
+      "after": "79f17b4c737ccfa63d4ed3dee91f66e9ab6d4cad9d4a8b6e6de99bcc26a2e371"
+    }
+  ],
+  "instanceRemoval": {
+    "patch": "esp-idf-6.1-instance-removal.patch",
+    "sha256": "c24db1357afe80e679d2a540a45314a1165151dfdccc6212de78ad399137397c",
+    "files": [
+      {
+        "path": "components/esp_event/esp_event.c",
+        "before": "0a31dfec97db91b3d8fbc5780998533715cbe255b59bff6b8f32df2218133936",
+        "after": "6359a509176ca0ec905541c0c5bbdc76d9fbcd46902b16eacc7e3fb8d9720f67"
+      },
+      {
+        "path": "components/esp_event/private_include/esp_event_internal.h",
+        "before": "26ccfd8b9dfe52bb2562994cf068e64c2e26d18d358bbb1e212431faddbe1623",
+        "after": "019038233d7bb4fd745220100d9007dbc7186e749a79e9deb3800e41b2052bcc"
+      }
+    ]
+  },
+  "mempoolReinit": {
+    "patch": "esp-idf-6.1-mempool-reinit.patch",
+    "sha256": "bc952000cda8b7016d722e380a8219e887e6ba34abe47a9fee3574ddbd47a797",
+    "files": [
+      {
+        "path": "components/bt/porting/mem/os_mempool.c",
+        "before": "5fd00c95785d3a95440f52b4c3cf559b4e753a283f5893f52eafd0363c4b261e",
+        "after": "4baeca8f35e45d0b52cc076aa320920488311f737b3870108f430c7b03e20595"
+      }
+    ]
+  },
+  "advertisingObserver": {
+    "patch": "esp-idf-6.1-advertising-observer.patch",
+    "sha256": "aa96c6ae73df8d6c432feeaa22ebdadaef659edb89c236e3f145b207c76e1806",
+    "files": [
+      {
+        "path": "components/protocomm/src/transports/protocomm_nimble.c",
+        "before": "d6b41129ca26e51ec5538acdc3d71972e68be44bd1a73cea7d01a8fd5572cedb",
+        "after": "d4e1f6bbfe9049a6343b86a7b995de9f1aa403d7a2850140efc681a18864149f"
+      },
+      {
+        "path": "components/protocomm/include/transports/protocomm_ble.h",
+        "before": "637da6bb371365bc86517c596cde0d28930556ee7c0904a9a8c71c72f9bbb2b7",
+        "after": "d86dd8bc7cfa6ef465c066e7f9174147ae397527dfa94239f0f194b161912962"
+      }
+    ]
+  }
+}

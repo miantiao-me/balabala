@@ -1,0 +1,97 @@
+--- a/engine/core/src/text.rs
++++ b/engine/core/src/text.rs
+@@ -142,6 +142,60 @@
+         })
+     }
+
++    /// Construct only the selected final cmap/bitmap from an immutable archive.
++    /// Codepoints must be nonempty, sorted and unique. No serialized subset copy.
++    pub fn subset(bytes: &[u8], chars: &[char]) -> Option<Atlas> {
++        use spec::font_atlas as fa;
++        if rd_u32(bytes, 0)? != fa::MAGIC || chars.is_empty() || chars.len() > u16::MAX as usize
++            || chars.windows(2).any(|w| w[0] >= w[1]) { return None; }
++        let density = match rd_u16(bytes, 4)? {
++            2 => 1,
++            v if v == fa::VERSION => *bytes.get(14)?,
++            _ => return None,
++        };
++        let count = rd_u16(bytes, 6)? as usize;
++        let cell_w = *bytes.get(8)? as u32;
++        let cell_h = *bytes.get(9)? as u32;
++        let baseline = *bytes.get(10)? as u32;
++        let line_height = *bytes.get(11)? as u32;
++        let slot = *bytes.get(12)?;
++        let flags = *bytes.get(13)?;
++        if density == 0 || count == 0 || cell_w == 0 || cell_h == 0 || slot as usize >= spec::MAX_FONT_SLOTS { return None; }
++        let bitmap_off = count.checked_mul(fa::CMAP_ENTRY_SIZE)?.checked_add(fa::HEADER_SIZE)?;
++        let cell_bytes = (cell_w as usize).checked_mul(cell_h as usize)?.checked_mul(density as usize)?.checked_mul(density as usize)?;
++        let end = bitmap_off.checked_add(count.checked_mul(cell_bytes)?)?;
++        bytes.get(..end)?;
++        let mut previous = None;
++        for i in 0..count {
++            let off = fa::HEADER_SIZE + i * fa::CMAP_ENTRY_SIZE;
++            let cp = rd_u32(bytes, off)?;
++            if previous.is_some_and(|p| p >= cp) || rd_u16(bytes, off + 4)? as usize >= count { return None; }
++            previous = Some(cp);
++        }
++        let find = |ch: char| -> Option<usize> {
++            let mut lo = 0; let mut hi = count;
++            while lo < hi {
++                let mid = (lo + hi) / 2;
++                if rd_u32(bytes, fa::HEADER_SIZE + mid * fa::CMAP_ENTRY_SIZE)? < ch as u32 { lo = mid + 1; } else { hi = mid; }
++            }
++            let off = fa::HEADER_SIZE + lo * fa::CMAP_ENTRY_SIZE;
++            (lo < count && rd_u32(bytes, off)? == ch as u32).then_some(off)
++        };
++        // Validate all indices before allocating either final buffer.
++        for ch in chars { find(*ch)?; }
++        let mut cmap = Vec::with_capacity(chars.len());
++        let mut bitmap = Vec::with_capacity(chars.len().checked_mul(cell_bytes)?);
++        for (gid, ch) in chars.iter().enumerate() {
++            let off = find(*ch)?;
++            let source_gid = rd_u16(bytes, off + 4)? as usize;
++            let start = bitmap_off + source_gid * cell_bytes;
++            cmap.push(CmapEntry { codepoint: *ch as u32, gid: gid as u16, advance: bytes[off + 6], xoff: bytes[off + 7] });
++            bitmap.extend_from_slice(bytes.get(start..start + cell_bytes)?);
++        }
++        Some(Atlas { cell_w, cell_h, texture_cell_w: cell_w, baseline, line_height,
++            raster_density: density, slot, flags, glyph_count: chars.len() as u16, cmap, stream: None, bitmap })
++    }
++
+     /// GPU cells omit transparent right-hand archive padding. Source coverage
+     /// retains its fixed row stride; this width includes every resident ink pixel.
+     pub fn texture_coverage_width(&self) -> u32 {
+@@ -298,6 +352,14 @@
+                 self.slots[slot] = Some(a);
+                 true
+             }
++            None => false,
++        }
++    }
++
++    /// Register a final subset without a serialized intermediate.
++    pub fn load_subset(&mut self, bytes: &[u8], chars: &[char]) -> bool {
++        match Atlas::subset(bytes, chars) {
++            Some(atlas) => { let slot = atlas.slot as usize; self.slots[slot] = Some(atlas); true }
+             None => false,
+         }
+     }
+--- a/engine/core/src/lib.rs
++++ b/engine/core/src/lib.rs
+@@ -1501,6 +1501,16 @@
+     /// the slot in its header. Returns false on bad magic/version.
+     pub fn load_font_atlas(&mut self, bytes: &[u8]) -> bool {
+         let ok = self.fonts.load(bytes);
++        self.font_loaded(bytes, ok)
++    }
++
++    /// Load selected archive glyphs directly into final atlas buffers.
++    pub fn load_font_subset(&mut self, bytes: &[u8], chars: &[char]) -> bool {
++        let ok = self.fonts.load_subset(bytes, chars);
++        self.font_loaded(bytes, ok)
++    }
++
++    fn font_loaded(&mut self, bytes: &[u8], ok: bool) -> bool {
+         if ok {
+             let slot = bytes[12] as usize;
+             self.font_revisions[slot] = self.font_revisions[slot].wrapping_add(1);

@@ -1,0 +1,458 @@
+{
+  "schema": 1,
+  "min_format": 1,
+  "version": 3,
+  "id": "english-demo",
+  "subject": "english",
+  "title": "英语小伙伴",
+  "cards": [
+    {
+      "id": "english-water",
+      "front": "water",
+      "back": "water 水，口渴时喝水。",
+      "question": "哪个英文词表示水？",
+      "options": [
+        "water",
+        "milk",
+        "bread",
+        "orange"
+      ],
+      "correct": 0,
+      "explanation": "water是水，请家长示范读音。"
+    },
+    {
+      "id": "english-bread",
+      "front": "bread",
+      "back": "bread 面包，可以作为早餐。",
+      "question": "哪个英文词表示面包？",
+      "options": [
+        "rice",
+        "bread",
+        "milk",
+        "orange"
+      ],
+      "correct": 1,
+      "explanation": "bread是面包，和家长一起读一读。"
+    },
+    {
+      "id": "english-rice",
+      "front": "rice",
+      "back": "rice 米饭，吃饭时细嚼慢咽。",
+      "question": "哪个英文词表示米饭？",
+      "options": [
+        "bread",
+        "milk",
+        "rice",
+        "water"
+      ],
+      "correct": 2,
+      "explanation": "rice是米饭，请家长示范读音。"
+    },
+    {
+      "id": "english-04",
+      "front": "orange",
+      "back": "orange 橙子，剥开有果肉。",
+      "question": "哪个英文词表示橙子？",
+      "options": [
+        "bread",
+        "rice",
+        "water",
+        "orange"
+      ],
+      "correct": 3,
+      "explanation": "orange可以表示橙子。"
+    },
+    {
+      "id": "english-05",
+      "front": "cat",
+      "back": "cat 猫，小猫轻轻走。",
+      "question": "哪个英文词表示猫？",
+      "options": [
+        "cat",
+        "dog",
+        "bird",
+        "fish"
+      ],
+      "correct": 0,
+      "explanation": "cat是猫，请家长示范读音。"
+    },
+    {
+      "id": "english-06",
+      "front": "dog",
+      "back": "dog 狗，小狗摇尾巴。",
+      "question": "哪个英文词表示狗？",
+      "options": [
+        "cat",
+        "dog",
+        "fish",
+        "bird"
+      ],
+      "correct": 1,
+      "explanation": "dog是狗，和家长一起读一读。"
+    },
+    {
+      "id": "english-07",
+      "front": "bird",
+      "back": "bird 鸟，小鸟有翅膀。",
+      "question": "哪个英文词表示鸟？",
+      "options": [
+        "dog",
+        "cat",
+        "bird",
+        "fish"
+      ],
+      "correct": 2,
+      "explanation": "bird是鸟，请家长示范读音。"
+    },
+    {
+      "id": "english-08",
+      "front": "fish",
+      "back": "fish 鱼，小鱼摆尾游。",
+      "question": "哪个英文词表示鱼？",
+      "options": [
+        "bird",
+        "dog",
+        "cat",
+        "fish"
+      ],
+      "correct": 3,
+      "explanation": "fish是鱼，和家长一起读一读。"
+    },
+    {
+      "id": "english-09",
+      "front": "sun",
+      "back": "sun 太阳，太阳带来光。",
+      "question": "哪个英文词表示太阳？",
+      "options": [
+        "sun",
+        "moon",
+        "star",
+        "cloud"
+      ],
+      "correct": 0,
+      "explanation": "sun是太阳，请家长示范读音。"
+    },
+    {
+      "id": "english-10",
+      "front": "moon",
+      "back": "moon 月亮，月亮在夜空。",
+      "question": "哪个英文词表示月亮？",
+      "options": [
+        "sun",
+        "moon",
+        "cloud",
+        "star"
+      ],
+      "correct": 1,
+      "explanation": "moon是月亮，和家长一起读一读。"
+    },
+    {
+      "id": "english-11",
+      "front": "star",
+      "back": "star 星星，夜里闪闪亮。",
+      "question": "哪个英文词表示星星？",
+      "options": [
+        "moon",
+        "sun",
+        "star",
+        "cloud"
+      ],
+      "correct": 2,
+      "explanation": "star是星星，请家长示范读音。"
+    },
+    {
+      "id": "english-12",
+      "front": "tree",
+      "back": "tree 树，大树有树干。",
+      "question": "哪个英文词表示树？",
+      "options": [
+        "flower",
+        "plant",
+        "grass",
+        "tree"
+      ],
+      "correct": 3,
+      "explanation": "tree是树，和家长一起读一读。"
+    },
+    {
+      "id": "english-13",
+      "front": "book",
+      "back": "book 书，翻开书看故事。",
+      "question": "哪个英文词表示书？",
+      "options": [
+        "book",
+        "pen",
+        "bag",
+        "cup"
+      ],
+      "correct": 0,
+      "explanation": "book是书，请家长示范读音。"
+    },
+    {
+      "id": "english-14",
+      "front": "pen",
+      "back": "pen 笔，用笔画一条线。",
+      "question": "哪个英文词表示笔？",
+      "options": [
+        "book",
+        "pen",
+        "cup",
+        "bag"
+      ],
+      "correct": 1,
+      "explanation": "pen是笔，和家长一起读一读。"
+    },
+    {
+      "id": "english-15",
+      "front": "bag",
+      "back": "bag 包，书可以放进包里。",
+      "question": "哪个英文词表示包？",
+      "options": [
+        "pen",
+        "book",
+        "bag",
+        "cup"
+      ],
+      "correct": 2,
+      "explanation": "bag是包，请家长示范读音。"
+    },
+    {
+      "id": "english-16",
+      "front": "cup",
+      "back": "cup 杯子，用杯子喝水。",
+      "question": "哪个英文词表示杯子？",
+      "options": [
+        "bag",
+        "pen",
+        "book",
+        "cup"
+      ],
+      "correct": 3,
+      "explanation": "cup是杯子，和家长一起读一读。"
+    },
+    {
+      "id": "english-17",
+      "front": "hand",
+      "back": "hand 手，用手挥一挥。",
+      "question": "哪个英文词表示手？",
+      "options": [
+        "hand",
+        "foot",
+        "eye",
+        "ear"
+      ],
+      "correct": 0,
+      "explanation": "hand是手，请家长示范读音。"
+    },
+    {
+      "id": "english-18",
+      "front": "foot",
+      "back": "foot 脚，用脚慢慢走。",
+      "question": "哪个英文词表示脚？",
+      "options": [
+        "hand",
+        "foot",
+        "ear",
+        "eye"
+      ],
+      "correct": 1,
+      "explanation": "foot是脚，和家长一起读一读。"
+    },
+    {
+      "id": "english-19",
+      "front": "eye",
+      "back": "eye 眼睛，用眼睛看。",
+      "question": "哪个英文词表示眼睛？",
+      "options": [
+        "ear",
+        "foot",
+        "eye",
+        "hand"
+      ],
+      "correct": 2,
+      "explanation": "eye是眼睛，请家长示范读音。"
+    },
+    {
+      "id": "english-20",
+      "front": "ear",
+      "back": "ear 耳朵，用耳朵听。",
+      "question": "哪个英文词表示耳朵？",
+      "options": [
+        "eye",
+        "hand",
+        "foot",
+        "ear"
+      ],
+      "correct": 3,
+      "explanation": "ear是耳朵，和家长一起读一读。"
+    },
+    {
+      "id": "english-21",
+      "front": "red",
+      "back": "red 红色，红红的苹果。",
+      "question": "哪个英文词表示红色？",
+      "options": [
+        "red",
+        "blue",
+        "green",
+        "yellow"
+      ],
+      "correct": 0,
+      "explanation": "red表示红色，请家长示范读音。"
+    },
+    {
+      "id": "english-22",
+      "front": "blue",
+      "back": "blue 蓝色，蓝蓝的天空。",
+      "question": "哪个英文词表示蓝色？",
+      "options": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ],
+      "correct": 1,
+      "explanation": "blue表示蓝色，和家长一起读一读。"
+    },
+    {
+      "id": "english-23",
+      "front": "yellow",
+      "back": "yellow 黄色，黄黄的香蕉。",
+      "question": "哪个英文词表示黄色？",
+      "options": [
+        "green",
+        "blue",
+        "yellow",
+        "red"
+      ],
+      "correct": 2,
+      "explanation": "yellow表示黄色，请家长示范读音。"
+    },
+    {
+      "id": "english-24",
+      "front": "green",
+      "back": "green 绿色，绿绿的小草。",
+      "question": "哪个英文词表示绿色？",
+      "options": [
+        "yellow",
+        "red",
+        "blue",
+        "green"
+      ],
+      "correct": 3,
+      "explanation": "green表示绿色，和家长一起读一读。"
+    },
+    {
+      "id": "english-25",
+      "front": "one",
+      "back": "one 一，一个苹果。",
+      "question": "哪个英文词表示数字一？",
+      "options": [
+        "one",
+        "two",
+        "three",
+        "four"
+      ],
+      "correct": 0,
+      "explanation": "one表示一，可以伸出一根手指。"
+    },
+    {
+      "id": "english-26",
+      "front": "two",
+      "back": "two 二，两只袜子。",
+      "question": "哪个英文词表示数字二？",
+      "options": [
+        "one",
+        "two",
+        "four",
+        "three"
+      ],
+      "correct": 1,
+      "explanation": "two表示二，和家长一起数一数。"
+    },
+    {
+      "id": "english-27",
+      "front": "three",
+      "back": "three 三，三片叶子。",
+      "question": "哪个英文词表示数字三？",
+      "options": [
+        "four",
+        "one",
+        "three",
+        "two"
+      ],
+      "correct": 2,
+      "explanation": "three表示三，可以伸出三根手指。"
+    },
+    {
+      "id": "english-28",
+      "front": "four",
+      "back": "four 四，四条桌腿。",
+      "question": "哪个英文词表示数字四？",
+      "options": [
+        "two",
+        "three",
+        "one",
+        "four"
+      ],
+      "correct": 3,
+      "explanation": "four表示四，和家长一起数一数。"
+    },
+    {
+      "id": "english-29",
+      "front": "nose",
+      "back": "nose 鼻子，用鼻子闻花香。",
+      "question": "哪个英文词表示鼻子？",
+      "options": [
+        "nose",
+        "eye",
+        "ear",
+        "mouth"
+      ],
+      "correct": 0,
+      "explanation": "nose是鼻子，可以用鼻子闻气味。"
+    },
+    {
+      "id": "english-30",
+      "front": "mouth",
+      "back": "mouth 嘴巴，吃饭要用嘴巴。",
+      "question": "哪个英文词表示嘴巴？",
+      "options": [
+        "nose",
+        "mouth",
+        "hand",
+        "foot"
+      ],
+      "correct": 1,
+      "explanation": "mouth是嘴巴，请家长示范读音。"
+    },
+    {
+      "id": "english-31",
+      "front": "leg",
+      "back": "leg 腿，走路要用腿。",
+      "question": "哪个英文词表示腿？",
+      "options": [
+        "hand",
+        "foot",
+        "leg",
+        "ear"
+      ],
+      "correct": 2,
+      "explanation": "leg是腿，和家长一起读一读。"
+    },
+    {
+      "id": "english-32",
+      "front": "milk",
+      "back": "milk 牛奶，杯子里可以装牛奶。",
+      "question": "哪个英文词表示牛奶？",
+      "options": [
+        "cup",
+        "book",
+        "bag",
+        "milk"
+      ],
+      "correct": 3,
+      "explanation": "milk是牛奶，请家长示范读音。"
+    }
+  ]
+}

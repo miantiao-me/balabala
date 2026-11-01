@@ -1,0 +1,458 @@
+{
+  "schema": 1,
+  "min_format": 1,
+  "version": 2,
+  "id": "hanzi-demo",
+  "subject": "hanzi",
+  "title": "汉字小天地",
+  "cards": [
+    {
+      "id": "hanzi-01",
+      "front": "山",
+      "back": "shān 高山，山峰高高的。",
+      "question": "哪个字表示高山？",
+      "options": [
+        "山",
+        "水",
+        "火",
+        "木"
+      ],
+      "correct": 0,
+      "explanation": "山有高高的山峰，可以说高山。"
+    },
+    {
+      "id": "hanzi-02",
+      "front": "水",
+      "back": "shuǐ 河水，小鱼在水里游。",
+      "question": "小鱼生活在哪里？",
+      "options": [
+        "火",
+        "水",
+        "土",
+        "日"
+      ],
+      "correct": 1,
+      "explanation": "小鱼在水里游，水是流动的。"
+    },
+    {
+      "id": "hanzi-03",
+      "front": "火",
+      "back": "huǒ 火苗，火很烫，要远离。",
+      "question": "哪个字表示火苗？",
+      "options": [
+        "木",
+        "山",
+        "火",
+        "月"
+      ],
+      "correct": 2,
+      "explanation": "火苗很烫，小朋友要远离火。"
+    },
+    {
+      "id": "hanzi-04",
+      "front": "木",
+      "back": "mù 木头，大树能长成木材。",
+      "question": "哪个字和树木有关？",
+      "options": [
+        "口",
+        "手",
+        "水",
+        "木"
+      ],
+      "correct": 3,
+      "explanation": "木可以组成树木、木头。"
+    },
+    {
+      "id": "hanzi-05",
+      "front": "日",
+      "back": "rì 日出，太阳从东方升起。",
+      "question": "哪个字表示太阳？",
+      "options": [
+        "日",
+        "月",
+        "山",
+        "田"
+      ],
+      "correct": 0,
+      "explanation": "日可以指太阳，日出时天渐渐亮了。"
+    },
+    {
+      "id": "hanzi-06",
+      "front": "月",
+      "back": "yuè 月亮，月亮挂在夜空。",
+      "question": "哪个字表示月亮？",
+      "options": [
+        "目",
+        "月",
+        "日",
+        "口"
+      ],
+      "correct": 1,
+      "explanation": "月可以组成月亮、月光。"
+    },
+    {
+      "id": "hanzi-07",
+      "front": "口",
+      "back": "kǒu 口水，说话要用嘴巴。",
+      "question": "哪个字表示嘴巴？",
+      "options": [
+        "田",
+        "目",
+        "口",
+        "日"
+      ],
+      "correct": 2,
+      "explanation": "口可以指嘴巴，开口就是张开嘴巴。"
+    },
+    {
+      "id": "hanzi-08",
+      "front": "目",
+      "back": "mù 目光，用眼睛仔细看。",
+      "question": "哪个字表示眼睛？",
+      "options": [
+        "月",
+        "口",
+        "手",
+        "目"
+      ],
+      "correct": 3,
+      "explanation": "目可以指眼睛，双目就是两只眼睛。"
+    },
+    {
+      "id": "hanzi-09",
+      "front": "手",
+      "back": "shǒu 小手，洗手后再吃饭。",
+      "question": "拿东西常常要用什么？",
+      "options": [
+        "手",
+        "足",
+        "山",
+        "田"
+      ],
+      "correct": 0,
+      "explanation": "用手拿东西，吃饭前记得洗手。"
+    },
+    {
+      "id": "hanzi-10",
+      "front": "足",
+      "back": "zú 双足，用脚慢慢走。",
+      "question": "哪个字和脚有关？",
+      "options": [
+        "手",
+        "足",
+        "口",
+        "目"
+      ],
+      "correct": 1,
+      "explanation": "足可以指脚，足球要用脚踢。"
+    },
+    {
+      "id": "hanzi-11",
+      "front": "人",
+      "back": "rén 大人，小朋友也是人。",
+      "question": "哪个字表示人？",
+      "options": [
+        "入",
+        "大",
+        "人",
+        "天"
+      ],
+      "correct": 2,
+      "explanation": "人可以组成大人、家人。"
+    },
+    {
+      "id": "hanzi-12",
+      "front": "大",
+      "back": "dà 大小，大象的身体很大。",
+      "question": "和小相对的是哪个字？",
+      "options": [
+        "天",
+        "人",
+        "小",
+        "大"
+      ],
+      "correct": 3,
+      "explanation": "大和小是一对相反的意思。"
+    },
+    {
+      "id": "hanzi-13",
+      "front": "小",
+      "back": "xiǎo 小草，小草轻轻摇。",
+      "question": "和大相对的是哪个字？",
+      "options": [
+        "小",
+        "大",
+        "山",
+        "木"
+      ],
+      "correct": 0,
+      "explanation": "小草的叶子小小的，小和大相对。"
+    },
+    {
+      "id": "hanzi-14",
+      "front": "上",
+      "back": "shàng 上面，帽子戴在头上。",
+      "question": "帽子戴在头的哪里？",
+      "options": [
+        "下",
+        "上",
+        "中",
+        "口"
+      ],
+      "correct": 1,
+      "explanation": "帽子戴在头上，上表示较高的位置。"
+    },
+    {
+      "id": "hanzi-15",
+      "front": "下",
+      "back": "xià 下面，鞋子放在床下。",
+      "question": "床底的位置可以说什么？",
+      "options": [
+        "上",
+        "中",
+        "下",
+        "天"
+      ],
+      "correct": 2,
+      "explanation": "床下是床的下面，下和上相对。"
+    },
+    {
+      "id": "hanzi-16",
+      "front": "中",
+      "back": "zhōng 中间，站在两棵树中间。",
+      "question": "两边之间的位置叫什么？",
+      "options": [
+        "上",
+        "下",
+        "大",
+        "中"
+      ],
+      "correct": 3,
+      "explanation": "中可以表示中间，两边之间就是中间。"
+    },
+    {
+      "id": "hanzi-17",
+      "front": "田",
+      "back": "tián 田地，农民在田里种稻。",
+      "question": "种稻的地方是哪里？",
+      "options": [
+        "田",
+        "目",
+        "口",
+        "月"
+      ],
+      "correct": 0,
+      "explanation": "田是种庄稼的土地，可以说稻田。"
+    },
+    {
+      "id": "hanzi-18",
+      "front": "土",
+      "back": "tǔ 泥土，种子在土里发芽。",
+      "question": "种子常种在哪里？",
+      "options": [
+        "水",
+        "土",
+        "日",
+        "火"
+      ],
+      "correct": 1,
+      "explanation": "种子在泥土里吸收水分，慢慢发芽。"
+    },
+    {
+      "id": "hanzi-19",
+      "front": "门",
+      "back": "mén 大门，出门前穿好鞋。",
+      "question": "进屋常常先打开什么？",
+      "options": [
+        "月",
+        "木",
+        "门",
+        "目"
+      ],
+      "correct": 2,
+      "explanation": "进屋要开门，离开时记得关门。"
+    },
+    {
+      "id": "hanzi-20",
+      "front": "雨",
+      "back": "yǔ 下雨，雨点从云里落下。",
+      "question": "从云里落下的水滴是什么？",
+      "options": [
+        "日",
+        "火",
+        "山",
+        "雨"
+      ],
+      "correct": 3,
+      "explanation": "小水滴从云里落下，就是雨。"
+    },
+    {
+      "id": "hanzi-21",
+      "front": "天",
+      "back": "tiān 天空，抬头能看见天空。",
+      "question": "抬头看到的天空是哪个字？",
+      "options": [
+        "天",
+        "地",
+        "水",
+        "木"
+      ],
+      "correct": 0,
+      "explanation": "天可以组成天空、白天。"
+    },
+    {
+      "id": "hanzi-22",
+      "front": "地",
+      "back": "dì 大地，小脚踩在地面上。",
+      "question": "小脚踩着的地面是哪个字？",
+      "options": [
+        "天",
+        "地",
+        "火",
+        "月"
+      ],
+      "correct": 1,
+      "explanation": "地可以组成大地、草地。"
+    },
+    {
+      "id": "hanzi-23",
+      "front": "云",
+      "back": "yún 白云，白云飘在天空中。",
+      "question": "哪个字表示天上的白云？",
+      "options": [
+        "雨",
+        "风",
+        "云",
+        "田"
+      ],
+      "correct": 2,
+      "explanation": "云飘在天空中，可以说白云。"
+    },
+    {
+      "id": "hanzi-24",
+      "front": "风",
+      "back": "fēng 微风，风吹动树叶。",
+      "question": "哪个字表示吹动树叶的风？",
+      "options": [
+        "水",
+        "山",
+        "日",
+        "风"
+      ],
+      "correct": 3,
+      "explanation": "风吹过来，树叶会轻轻摇动。"
+    },
+    {
+      "id": "hanzi-25",
+      "front": "花",
+      "back": "huā 花朵，春天花儿开。",
+      "question": "哪个字表示花朵？",
+      "options": [
+        "花",
+        "草",
+        "木",
+        "土"
+      ],
+      "correct": 0,
+      "explanation": "花可以组成花朵、鲜花。"
+    },
+    {
+      "id": "hanzi-26",
+      "front": "草",
+      "back": "cǎo 小草，小草长在地上。",
+      "question": "哪个字表示地上的小草？",
+      "options": [
+        "花",
+        "草",
+        "云",
+        "月"
+      ],
+      "correct": 1,
+      "explanation": "草可以组成小草、草地。"
+    },
+    {
+      "id": "hanzi-27",
+      "front": "鸟",
+      "back": "niǎo 小鸟，小鸟有翅膀。",
+      "question": "哪个字表示有翅膀的小鸟？",
+      "options": [
+        "牛",
+        "羊",
+        "鸟",
+        "鱼"
+      ],
+      "correct": 2,
+      "explanation": "鸟有翅膀，可以说小鸟。"
+    },
+    {
+      "id": "hanzi-28",
+      "front": "鱼",
+      "back": "yú 小鱼，小鱼在水里游。",
+      "question": "哪个字表示水里的小鱼？",
+      "options": [
+        "马",
+        "鸟",
+        "牛",
+        "鱼"
+      ],
+      "correct": 3,
+      "explanation": "鱼在水里生活，可以说金鱼。"
+    },
+    {
+      "id": "hanzi-29",
+      "front": "牛",
+      "back": "niú 小牛，小牛低头吃草。",
+      "question": "哪个字表示吃草的小牛？",
+      "options": [
+        "牛",
+        "羊",
+        "马",
+        "鸟"
+      ],
+      "correct": 0,
+      "explanation": "牛可以组成小牛、奶牛。"
+    },
+    {
+      "id": "hanzi-30",
+      "front": "羊",
+      "back": "yáng 绵羊，羊毛软软的。",
+      "question": "哪个字表示绵羊？",
+      "options": [
+        "牛",
+        "羊",
+        "鱼",
+        "马"
+      ],
+      "correct": 1,
+      "explanation": "羊可以组成绵羊、山羊。"
+    },
+    {
+      "id": "hanzi-31",
+      "front": "马",
+      "back": "mǎ 小马，小马在草地上跑。",
+      "question": "哪个字表示小马？",
+      "options": [
+        "牛",
+        "羊",
+        "马",
+        "鸟"
+      ],
+      "correct": 2,
+      "explanation": "马可以组成小马、白马。"
+    },
+    {
+      "id": "hanzi-32",
+      "front": "车",
+      "back": "chē 汽车，出门可以坐车。",
+      "question": "哪个字表示汽车？",
+      "options": [
+        "门",
+        "田",
+        "木",
+        "车"
+      ],
+      "correct": 3,
+      "explanation": "车可以组成汽车、火车。"
+    }
+  ]
+}

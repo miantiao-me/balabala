@@ -1,0 +1,67 @@
+--- a/components/protocomm/src/transports/protocomm_nimble.c
++++ b/components/protocomm/src/transports/protocomm_nimble.c
+@@ -727,7 +727,7 @@
+     ble_event.conn_handle = event->disconnect.conn.conn_handle;
+     ble_event.disconnect_reason = event->disconnect.reason;
+ 
+-    if (esp_event_post(PROTOCOMM_TRANSPORT_BLE_EVENT, PROTOCOMM_TRANSPORT_BLE_DISCONNECTED, &ble_event, sizeof(protocomm_ble_event_t), portMAX_DELAY) != ESP_OK) {
++    if (esp_event_post(PROTOCOMM_TRANSPORT_BLE_EVENT, PROTOCOMM_TRANSPORT_BLE_DISCONNECTED, &ble_event, sizeof(protocomm_ble_event_t), 0) != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to post transport disconnection event");
+     }
+ 
+@@ -779,7 +779,7 @@
+             ble_event.conn_handle = event->connect.conn_handle;
+             ble_event.conn_status = event->connect.status;
+ 
+-            if (esp_event_post(PROTOCOMM_TRANSPORT_BLE_EVENT, PROTOCOMM_TRANSPORT_BLE_CONNECTED, &ble_event, sizeof(protocomm_ble_event_t), portMAX_DELAY) != ESP_OK) {
++            if (esp_event_post(PROTOCOMM_TRANSPORT_BLE_EVENT, PROTOCOMM_TRANSPORT_BLE_CONNECTED, &ble_event, sizeof(protocomm_ble_event_t), 0) != ESP_OK) {
+                 ESP_LOGE(TAG, "Failed to post transport pairing event");
+             }
+         }
+--- a/components/protocomm/src/security/security1.c
++++ b/components/protocomm/src/security/security1.c
+@@ -99,7 +99,7 @@
+                  (int) (in && in->sc1 ? in->sc1->client_verify_data.len : -1));
+         if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT,
+                           PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS,
+-                          NULL, 0, portMAX_DELAY) != ESP_OK) {
++                          NULL, 0, 0) != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to post invalid security params event");
+         }
+         return ESP_ERR_INVALID_ARG;
+@@ -165,7 +165,7 @@
+                                  sizeof(cur_session->device_pubkey)) != 0) {
+         ESP_LOGE(TAG, "Key mismatch. Close connection");
+         psa_destroy_key(key_id);
+-        if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH, NULL, 0, portMAX_DELAY) != ESP_OK) {
++        if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH, NULL, 0, 0) != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to post credential mismatch event");
+         }
+         return ESP_FAIL;
+@@ -212,7 +212,7 @@
+     resp->sec1 = out;
+ 
+     cur_session->state = SESSION_STATE_DONE;
+-    if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_SETUP_OK, NULL, 0, portMAX_DELAY) != ESP_OK) {
++    if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_SETUP_OK, NULL, 0, 0) != ESP_OK) {
+         ESP_LOGE(TAG, "Failed to post secure session setup success event");
+     }
+ 
+@@ -239,7 +239,7 @@
+ 
+     if (in->payload_case != SEC1_PAYLOAD__PAYLOAD_SC0 || !in->sc0) {
+         ESP_LOGE(TAG, "Missing or mismatched sc0 payload in session command0");
+-        if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS, NULL, 0, portMAX_DELAY) != ESP_OK) {
++        if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS, NULL, 0, 0) != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to post secure session invalid security params event");
+         }
+         return ESP_ERR_INVALID_ARG;
+@@ -247,7 +247,7 @@
+ 
+     if (in->sc0->client_pubkey.len != PUBLIC_KEY_LEN) {
+         ESP_LOGE(TAG, "Invalid public key length");
+-        if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS, NULL, 0, portMAX_DELAY) != ESP_OK) {
++        if (esp_event_post(PROTOCOMM_SECURITY_SESSION_EVENT, PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS, NULL, 0, 0) != ESP_OK) {
+             ESP_LOGE(TAG, "Failed to post secure session invalid security params event");
+         }
+         return ESP_ERR_INVALID_ARG;

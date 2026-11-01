@@ -1,0 +1,458 @@
+{
+  "schema": 1,
+  "min_format": 1,
+  "version": 2,
+  "id": "pinyin-demo",
+  "subject": "pinyin",
+  "title": "拼音小花园",
+  "cards": [
+    {
+      "id": "pinyin-01",
+      "front": "ā",
+      "back": "ā 一声，声音平平的。",
+      "question": "哪个是单韵母a的一声？",
+      "options": [
+        "ā",
+        "á",
+        "ǎ",
+        "à"
+      ],
+      "correct": 0,
+      "explanation": "ā上面是平线，表示第一声。"
+    },
+    {
+      "id": "pinyin-02",
+      "front": "á",
+      "back": "á 二声，声音往上扬。",
+      "question": "哪个是单韵母a的二声？",
+      "options": [
+        "à",
+        "á",
+        "ā",
+        "ǎ"
+      ],
+      "correct": 1,
+      "explanation": "á上面的声调向右上，表示第二声。"
+    },
+    {
+      "id": "pinyin-03",
+      "front": "ǎ",
+      "back": "ǎ 三声，先低后扬。",
+      "question": "哪个是单韵母a的三声？",
+      "options": [
+        "ā",
+        "à",
+        "ǎ",
+        "á"
+      ],
+      "correct": 2,
+      "explanation": "ǎ上面像小弯，表示第三声。"
+    },
+    {
+      "id": "pinyin-04",
+      "front": "à",
+      "back": "à 四声，声音往下降。",
+      "question": "哪个是单韵母a的四声？",
+      "options": [
+        "á",
+        "ā",
+        "ǎ",
+        "à"
+      ],
+      "correct": 3,
+      "explanation": "à上面的声调向右下，表示第四声。"
+    },
+    {
+      "id": "pinyin-05",
+      "front": "ō",
+      "back": "ō 读一声，请家长示范。",
+      "question": "哪个是o的一声？",
+      "options": [
+        "ō",
+        "ó",
+        "ǒ",
+        "ò"
+      ],
+      "correct": 0,
+      "explanation": "ō上面是平线，表示第一声。"
+    },
+    {
+      "id": "pinyin-06",
+      "front": "é",
+      "back": "é 读二声，请家长示范。",
+      "question": "哪个是e的二声？",
+      "options": [
+        "è",
+        "é",
+        "ē",
+        "ě"
+      ],
+      "correct": 1,
+      "explanation": "é上面的声调向右上。"
+    },
+    {
+      "id": "pinyin-07",
+      "front": "ǐ",
+      "back": "ǐ 读三声，i标调去掉点。",
+      "question": "哪个是i的三声？",
+      "options": [
+        "ī",
+        "ì",
+        "ǐ",
+        "í"
+      ],
+      "correct": 2,
+      "explanation": "i标声调时去掉原来的小点。"
+    },
+    {
+      "id": "pinyin-08",
+      "front": "ù",
+      "back": "ù 读四声，请家长示范。",
+      "question": "哪个是u的四声？",
+      "options": [
+        "ū",
+        "ú",
+        "ǔ",
+        "ù"
+      ],
+      "correct": 3,
+      "explanation": "ù上面的声调向右下。"
+    },
+    {
+      "id": "pinyin-09",
+      "front": "ü",
+      "back": "ü 有两点，请家长示范。",
+      "question": "哪个韵母头上有两点？",
+      "options": [
+        "ü",
+        "u",
+        "o",
+        "a"
+      ],
+      "correct": 0,
+      "explanation": "ü头上有两点，写时不要漏掉。"
+    },
+    {
+      "id": "pinyin-10",
+      "front": "ǘ",
+      "back": "ǘ 是ü的二声。",
+      "question": "哪个是ü的二声？",
+      "options": [
+        "ǜ",
+        "ǘ",
+        "ǚ",
+        "ǖ"
+      ],
+      "correct": 1,
+      "explanation": "ü标调保留两点，ǘ是第二声。"
+    },
+    {
+      "id": "pinyin-11",
+      "front": "b",
+      "back": "b 声母，像广播的播。",
+      "question": "哪个是声母b？",
+      "options": [
+        "d",
+        "p",
+        "b",
+        "q"
+      ],
+      "correct": 2,
+      "explanation": "b的圆肚子在右下，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-12",
+      "front": "p",
+      "back": "p 声母，像山坡的坡。",
+      "question": "哪个是声母p？",
+      "options": [
+        "b",
+        "d",
+        "q",
+        "p"
+      ],
+      "correct": 3,
+      "explanation": "p的圆肚子在右上，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-13",
+      "front": "m",
+      "back": "m 声母，像摸一摸的摸。",
+      "question": "哪个是声母m？",
+      "options": [
+        "m",
+        "n",
+        "f",
+        "t"
+      ],
+      "correct": 0,
+      "explanation": "m有两个小门洞，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-14",
+      "front": "f",
+      "back": "f 声母，像大佛的佛。",
+      "question": "哪个是声母f？",
+      "options": [
+        "t",
+        "f",
+        "m",
+        "n"
+      ],
+      "correct": 1,
+      "explanation": "f上面弯弯的，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-15",
+      "front": "d",
+      "back": "d 声母，像得到的得。",
+      "question": "哪个是声母d？",
+      "options": [
+        "b",
+        "p",
+        "d",
+        "q"
+      ],
+      "correct": 2,
+      "explanation": "d的圆肚子在左下，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-16",
+      "front": "t",
+      "back": "t 声母，像特别的特。",
+      "question": "哪个是声母t？",
+      "options": [
+        "f",
+        "l",
+        "n",
+        "t"
+      ],
+      "correct": 3,
+      "explanation": "t中间有一横，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-17",
+      "front": "n",
+      "back": "n 声母，像拿起的拿。",
+      "question": "哪个是声母n？",
+      "options": [
+        "n",
+        "m",
+        "l",
+        "h"
+      ],
+      "correct": 0,
+      "explanation": "n有一个小门洞，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-18",
+      "front": "l",
+      "back": "l 声母，像快乐的乐。",
+      "question": "哪个是声母l？",
+      "options": [
+        "i",
+        "l",
+        "t",
+        "f"
+      ],
+      "correct": 1,
+      "explanation": "l像一根小棒，请家长示范读音。"
+    },
+    {
+      "id": "pinyin-19",
+      "front": "mā",
+      "back": "mā 妈，声母m加韵母ā。",
+      "question": "哪个音节是妈的读音？",
+      "options": [
+        "má",
+        "mǎ",
+        "mā",
+        "mà"
+      ],
+      "correct": 2,
+      "explanation": "妈读mā，a上面的平线表示一声。"
+    },
+    {
+      "id": "pinyin-20",
+      "front": "lǜ",
+      "back": "lǜ 绿，声母l加韵母ǜ。",
+      "question": "哪个音节是绿的读音？",
+      "options": [
+        "lú",
+        "lǚ",
+        "lū",
+        "lǜ"
+      ],
+      "correct": 3,
+      "explanation": "绿读lǜ，ü上的两点不能省略。"
+    },
+    {
+      "id": "pinyin-21",
+      "front": "g",
+      "back": "g 可以拼gē，哥哥的哥。",
+      "question": "“哥”的声母是哪个？",
+      "options": [
+        "g",
+        "k",
+        "h",
+        "j"
+      ],
+      "correct": 0,
+      "explanation": "g和ē可以拼成gē，哥哥的哥。"
+    },
+    {
+      "id": "pinyin-22",
+      "front": "k",
+      "back": "k 可以拼kǒu，口水的口。",
+      "question": "“口”的声母是哪个？",
+      "options": [
+        "g",
+        "k",
+        "h",
+        "q"
+      ],
+      "correct": 1,
+      "explanation": "k和ǒu可以拼成kǒu，嘴巴的口。"
+    },
+    {
+      "id": "pinyin-23",
+      "front": "h",
+      "back": "h 可以拼huā，花朵的花。",
+      "question": "“花”的声母是哪个？",
+      "options": [
+        "g",
+        "k",
+        "h",
+        "x"
+      ],
+      "correct": 2,
+      "explanation": "h和uā可以拼成huā，花朵的花。"
+    },
+    {
+      "id": "pinyin-24",
+      "front": "j",
+      "back": "j 可以拼jī，小鸡的鸡。",
+      "question": "“鸡”的声母是哪个？",
+      "options": [
+        "q",
+        "x",
+        "g",
+        "j"
+      ],
+      "correct": 3,
+      "explanation": "j和ī可以拼成jī，小鸡的鸡。"
+    },
+    {
+      "id": "pinyin-25",
+      "front": "q",
+      "back": "q 可以拼qì，气球的气。",
+      "question": "“气”的声母是哪个？",
+      "options": [
+        "q",
+        "j",
+        "x",
+        "k"
+      ],
+      "correct": 0,
+      "explanation": "q和ì可以拼成qì，气球的气。"
+    },
+    {
+      "id": "pinyin-26",
+      "front": "x",
+      "back": "x 可以拼xī，西瓜的西。",
+      "question": "“西”的声母是哪个？",
+      "options": [
+        "j",
+        "x",
+        "q",
+        "h"
+      ],
+      "correct": 1,
+      "explanation": "x和ī可以拼成xī，西瓜的西。"
+    },
+    {
+      "id": "pinyin-27",
+      "front": "zh",
+      "back": "zh 可以拼zhī，知道的知。",
+      "question": "“知”的声母是哪个？",
+      "options": [
+        "z",
+        "ch",
+        "zh",
+        "sh"
+      ],
+      "correct": 2,
+      "explanation": "zh和ī可以拼成zhī，知道的知。"
+    },
+    {
+      "id": "pinyin-28",
+      "front": "ch",
+      "back": "ch 可以拼chē，汽车的车。",
+      "question": "“车”的声母是哪个？",
+      "options": [
+        "c",
+        "zh",
+        "sh",
+        "ch"
+      ],
+      "correct": 3,
+      "explanation": "ch和ē可以拼成chē，汽车的车。"
+    },
+    {
+      "id": "pinyin-29",
+      "front": "sh",
+      "back": "sh 可以拼shān，高山的山。",
+      "question": "“山”的声母是哪个？",
+      "options": [
+        "sh",
+        "s",
+        "zh",
+        "ch"
+      ],
+      "correct": 0,
+      "explanation": "sh和ān可以拼成shān，高山的山。"
+    },
+    {
+      "id": "pinyin-30",
+      "front": "r",
+      "back": "r 可以拼rì，日出的日。",
+      "question": "“日”的声母是哪个？",
+      "options": [
+        "l",
+        "r",
+        "n",
+        "h"
+      ],
+      "correct": 1,
+      "explanation": "r和ì可以拼成rì，日出的日。"
+    },
+    {
+      "id": "pinyin-31",
+      "front": "z",
+      "back": "z 可以拼zì，汉字的字。",
+      "question": "“字”的声母是哪个？",
+      "options": [
+        "zh",
+        "c",
+        "z",
+        "r"
+      ],
+      "correct": 2,
+      "explanation": "z和ì可以拼成zì，汉字的字。"
+    },
+    {
+      "id": "pinyin-32",
+      "front": "c",
+      "back": "c 可以拼cǎo，小草的草。",
+      "question": "“草”的声母是哪个？",
+      "options": [
+        "ch",
+        "z",
+        "s",
+        "c"
+      ],
+      "correct": 3,
+      "explanation": "c和ǎo可以拼成cǎo，小草的草。"
+    }
+  ]
+}

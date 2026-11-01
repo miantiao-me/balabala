@@ -1,0 +1,124 @@
+--- a/components/protocomm/src/transports/protocomm_nimble.c
++++ b/components/protocomm/src/transports/protocomm_nimble.c
+@@ -128,6 +128,8 @@
+ static void simple_ble_gatts_clear_cached_values(void);
+ 
+ typedef struct {
++    protocomm_ble_advertising_cb_t advertising_cb;
++    void *advertising_context;
+     /** Name to be displayed to devices scanning for ESP32 */
+     const char *device_name;
+     /** Advertising data content, according to "Supplement to the Bluetooth Core Specification" */
+@@ -157,6 +159,23 @@
+ } simple_ble_cfg_t;
+ 
+ static simple_ble_cfg_t *ble_cfg_p;
++static protocomm_ble_advertising_cb_t next_advertising_cb;
++static void *next_advertising_context;
++
++esp_err_t protocomm_ble_set_advertising_callback(protocomm_ble_advertising_cb_t cb, void *context)
++{
++    if (protoble_internal || ble_cfg_p) return ESP_ERR_INVALID_STATE;
++    next_advertising_cb = cb;
++    next_advertising_context = context;
++    return ESP_OK;
++}
++
++static void advertising_result(int result)
++{
++    /* The session context is immutable until the host has stopped. */
++    if (ble_cfg_p && ble_cfg_p->advertising_cb)
++        ble_cfg_p->advertising_cb(ble_cfg_p->advertising_context, result);
++}
+ 
+ /************************************************************
+ * Functions to set and get attr value based on attr Handle  *
+@@ -214,12 +233,14 @@
+     rc = ble_gap_adv_set_fields(&adv_data);
+     if (rc != 0) {
+         ESP_LOGE(TAG, "Error setting advertisement data; rc = %d", rc);
++        advertising_result(rc);
+         return;
+     }
+ 
+     rc = ble_gap_adv_rsp_set_fields((const struct ble_hs_adv_fields *) &resp_data);
+     if (rc != 0) {
+         ESP_LOGE(TAG, "Error in setting scan response; rc = %d", rc);
++        advertising_result(rc);
+         return;
+     }
+ 
+@@ -238,8 +259,10 @@
+         } else {
+             ESP_LOGE(TAG, "Error enabling advertisement; rc = %d", rc);
+         }
++        advertising_result(rc);
+         return;
+     }
++    advertising_result(0);
+     /*   Take note of free heap space  */
+     ESP_LOGD(TAG, "Minimum free heap size = %" PRIu32 ", free Heap size = %" PRIu32,
+              esp_get_minimum_free_heap_size(), esp_get_free_heap_size());
+@@ -577,20 +600,23 @@
+          rc = ble_hs_id_set_rnd(protocomm_ble_addr);
+ 	 if (rc != 0) {
+              ESP_LOGE(TAG,"Error in setting address");
+-	     return;
++	     advertising_result(rc);
++             return;
+ 	 }
+ 
+          rc = ble_hs_util_ensure_addr(1);
+ 	 if (rc != 0) {
+              ESP_LOGE(TAG,"Error loading address");
+-	     return;
++	     advertising_result(rc);
++             return;
+ 	 }
+     }
+     else {
+         rc = ble_hs_util_ensure_addr(0);
+         if (rc != 0) {
+             ESP_LOGE(TAG, "Error loading address");
+-            return;
++            advertising_result(rc);
++             return;
+         }
+     }
+ 
+@@ -598,7 +624,8 @@
+     rc = ble_hs_id_infer_auto(0, &own_addr_type);
+     if (rc != 0) {
+         ESP_LOGE(TAG, "error determining address type; rc=%d", rc);
+-        return;
++        advertising_result(rc);
++             return;
+     }
+ 
+     /* Begin advertising. */
+@@ -1182,6 +1209,9 @@
+         return ESP_ERR_NO_MEM;
+     }
+ 
++    ble_config->advertising_cb = next_advertising_cb;
++    ble_config->advertising_context = next_advertising_context;
++
+     /* Set function pointers required for simple BLE layer */
+     ble_config->connect_fn      = transport_simple_ble_connect;
+     ble_config->disconnect_fn   = transport_simple_ble_disconnect;
+--- a/components/protocomm/include/transports/protocomm_ble.h
++++ b/components/protocomm/include/transports/protocomm_ble.h
+@@ -172,6 +172,13 @@
+  */
+ esp_err_t protocomm_ble_start(protocomm_t *pc, const protocomm_ble_config_t *config);
+ 
++/** NimBLE-only local observer. Set while stopped; captured by the next transport.
++ * Called synchronously with 0 only after ble_gap_adv_start succeeds, otherwise
++ * the host/address/advertising error. The callback must not block or stop BLE.
++ */
++typedef void (*protocomm_ble_advertising_cb_t)(void *context, int result);
++esp_err_t protocomm_ble_set_advertising_callback(protocomm_ble_advertising_cb_t cb, void *context);
++
+ /**
+  * @brief   Stop Bluetooth Low Energy based transport layer for provisioning
+  *

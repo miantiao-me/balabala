@@ -1,0 +1,180 @@
+--- a/engine/core/src/text.rs
++++ b/engine/core/src/text.rs
+@@ -63,6 +63,9 @@
+     /// Coverage cells: glyphCount x (cellH*density) x (cellW*density)
+     /// alpha bytes, left-to-right.
+     pub bitmap: Vec<u8>,
++    /// Static archives retain their source glyph IDs and borrow Flash coverage.
++    pub(crate) static_bitmap: Option<&'static [u8]>,
++    pub(crate) fallback_gid: u16,
+ }
+
+ impl Atlas {
+@@ -139,12 +142,24 @@
+             stream: None,
+             texture_cell_w: cell_w,
+             bitmap,
++            static_bitmap: None,
++            fallback_gid: 0,
+         })
+     }
+
+     /// Construct only the selected final cmap/bitmap from an immutable archive.
+     /// Codepoints must be nonempty, sorted and unique. No serialized subset copy.
+     pub fn subset(bytes: &[u8], chars: &[char]) -> Option<Atlas> {
++        Self::subset_impl(bytes, chars, None)
++    }
++
++    /// Borrow an entire static archive bitmap, retaining only the selected cmap.
++    /// Like `subset`, rejects empty, unsorted, duplicate or missing codepoints.
++    pub fn subset_static(bytes: &'static [u8], chars: &[char]) -> Option<Atlas> {
++        Self::subset_impl(bytes, chars, Some(bytes))
++    }
++
++    fn subset_impl(bytes: &[u8], chars: &[char], source: Option<&'static [u8]>) -> Option<Atlas> {
+         use spec::font_atlas as fa;
+         if rd_u32(bytes, 0)? != fa::MAGIC || chars.is_empty() || chars.len() > u16::MAX as usize
+             || chars.windows(2).any(|w| w[0] >= w[1]) { return None; }
+@@ -183,17 +198,33 @@
+         };
+         // Validate all indices before allocating either final buffer.
+         for ch in chars { find(*ch)?; }
++        let static_bitmap = match source {
++            Some(source) => Some(source.get(bitmap_off..end)?),
++            None => None,
++        };
+         let mut cmap = Vec::with_capacity(chars.len());
+-        let mut bitmap = Vec::with_capacity(chars.len().checked_mul(cell_bytes)?);
++        let mut bitmap = if static_bitmap.is_some() { Vec::new() }
++            else { Vec::with_capacity(chars.len().checked_mul(cell_bytes)?) };
+         for (gid, ch) in chars.iter().enumerate() {
+             let off = find(*ch)?;
+             let source_gid = rd_u16(bytes, off + 4)? as usize;
+             let start = bitmap_off + source_gid * cell_bytes;
+-            cmap.push(CmapEntry { codepoint: *ch as u32, gid: gid as u16, advance: bytes[off + 6], xoff: bytes[off + 7] });
+-            bitmap.extend_from_slice(bytes.get(start..start + cell_bytes)?);
+-        }
++            let gid = if static_bitmap.is_some() { source_gid as u16 } else { gid as u16 };
++            cmap.push(CmapEntry { codepoint: *ch as u32, gid, advance: bytes[off + 6], xoff: bytes[off + 7] });
++            if static_bitmap.is_none() { bitmap.extend_from_slice(bytes.get(start..start + cell_bytes)?); }
++        }
++        // Preserve owned-subset fallback: its gid 0 is the first selected cell,
++        // which need not be U+FFFD or source gid 0.
++        let fallback_gid = cmap.first()?.gid;
++        let glyph_count = if static_bitmap.is_some() { count as u16 } else { chars.len() as u16 };
+         Some(Atlas { cell_w, cell_h, texture_cell_w: cell_w, baseline, line_height,
+-            raster_density: density, slot, flags, glyph_count: chars.len() as u16, cmap, stream: None, bitmap })
++            raster_density: density, slot, flags, glyph_count, cmap, stream: None, bitmap,
++            static_bitmap, fallback_gid })
++    }
++
++    /// Read coverage through this accessor for either owned or Flash storage.
++    pub fn bitmap(&self) -> &[u8] {
++        self.static_bitmap.unwrap_or(&self.bitmap)
+     }
+
+     /// GPU cells omit transparent right-hand archive padding. Source coverage
+@@ -235,7 +266,7 @@
+     pub fn glyph_rows(&self, gid: u16) -> &[u8] {
+         let per_glyph = self.coverage_height() as usize * self.bytes_per_row();
+         let start = gid as usize * per_glyph;
+-        &self.bitmap[start..start + per_glyph]
++        &self.bitmap()[start..start + per_glyph]
+     }
+
+     /// Average one logical pixel's density×density coverage samples. This is
+@@ -364,6 +395,14 @@
+         }
+     }
+
++    /// Register selected cmap entries backed by a static archive bitmap.
++    pub fn load_subset_static(&mut self, bytes: &'static [u8], chars: &[char]) -> bool {
++        match Atlas::subset_static(bytes, chars) {
++            Some(atlas) => { let slot = atlas.slot as usize; self.slots[slot] = Some(atlas); true }
++            None => false,
++        }
++    }
++
+     #[inline]
+     pub fn atlas(&self, slot: u8) -> Option<&Atlas> {
+         self.slots.get(slot as usize)?.as_ref()
+@@ -373,14 +412,14 @@
+         self.slots.get_mut(slot as usize)?.as_mut()
+     }
+
+-    /// (gid, advance, xoff) for a codepoint; a miss resolves to gid 0 (tofu,
+-    /// cell width advance) and bumps the miss counter.
++    /// (gid, advance, xoff) for a codepoint; a miss resolves to the atlas's
++    /// fallback cell with cell-width advance and bumps the miss counter.
+     fn glyph(&self, atlas: &Atlas, cp: u32) -> (u16, f32, f32) {
+         match atlas.lookup_entry(cp) {
+             Some(e) => (e.gid, e.advance as f32, e.xoff as f32),
+             None => {
+                 self.misses.set(self.misses.get().wrapping_add(1));
+-                (0, atlas.stream.as_ref().map_or(atlas.cell_w as f32, |s| s.advance as f32), 0.0)
++                (atlas.fallback_gid, atlas.stream.as_ref().map_or(atlas.cell_w as f32, |s| s.advance as f32), 0.0)
+             }
+         }
+     }
+--- a/engine/core/src/lib.rs
++++ b/engine/core/src/lib.rs
+@@ -1526,6 +1526,12 @@
+         self.font_loaded(bytes, ok)
+     }
+
++    /// Load selected cmap entries while borrowing coverage from static Flash.
++    pub fn load_font_subset_static(&mut self, bytes: &'static [u8], chars: &[char]) -> bool {
++        let ok = self.fonts.load_subset_static(bytes, chars);
++        self.font_loaded(bytes, ok)
++    }
++
+     fn font_loaded(&mut self, bytes: &[u8], ok: bool) -> bool {
+         if ok {
+             let slot = bytes[12] as usize;
+--- a/engine/core/src/resources.rs
++++ b/engine/core/src/resources.rs
+@@ -28,7 +28,7 @@
+     }
+     fn font_atlas(&self, slot: u8) -> Option<FontView<'_>> {
+         Ui::font_atlas(self, slot).map(|atlas| FontView {
+-            bitmap: &atlas.bitmap,
++            bitmap: atlas.bitmap(),
+             cell_w: atlas.cell_w,
+             cell_h: atlas.cell_h,
+             raster_density: atlas.raster_density,
+--- a/engine/core/src/font_pages.rs
++++ b/engine/core/src/font_pages.rs
+@@ -4,7 +4,7 @@
+
+ pub(crate) fn view(atlas: &Atlas) -> pocket_drivers::FontView<'_> {
+     pocket_drivers::FontView {
+-        bitmap: &atlas.bitmap,
++        bitmap: atlas.bitmap(),
+         cell_w: atlas.cell_w,
+         cell_h: atlas.cell_h,
+         raster_density: atlas.raster_density,
+--- a/engine/core/src/font_stream.rs
++++ b/engine/core/src/font_stream.rs
+@@ -154,6 +154,7 @@
+             });
+         let capacity = u16::from_le_bytes([b[16], b[17]]) as usize;
+         if generation == 0 && capacity == 0 {
++            if self.stream.is_none() { return true; }
+             // Streaming may pad baked cells. Compact them before releasing the
+             // allocation so detaching also restores the original atlas stride.
+             let old_w = self.coverage_width() as usize;
+@@ -204,11 +205,13 @@
+         for g in 0..base as usize {
+             for y in 0..old_h {
+                 pixels[g * cw * ch + y * cw..g * cw * ch + y * cw + old_w].copy_from_slice(
+-                    &self.bitmap
++                    &self.bitmap()
+                         [g * old_w * old_h + y * old_w..g * old_w * old_h + (y + 1) * old_w],
+                 );
+             }
+         }
++        // Streaming owns writable coverage; never write through a Flash borrow.
++        self.static_bitmap = None;
+         self.bitmap = pixels;
+         self.cell_w = cw as u32;
+         self.cell_h = ch as u32;

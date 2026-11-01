@@ -1,0 +1,28 @@
+# 此清单由 tools/build.sh 复制到 .build/native/ 后使用。
+[package]
+name = "balabala-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[lib]
+path = "../../native/src/lib.rs"
+crate-type = ["rlib", "staticlib"]
+
+[features]
+autotest = []
+
+[dependencies]
+microts = { path = "../../.tools/pocketjs/engine/crates/microts", default-features = false }
+pocketjs-core = { path = "../../.tools/pocketjs/engine/core", default-features = false }
+
+serde = { version = "=1.0.229", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "=1.0.154", default-features = false, features = ["alloc", "raw_value"] }
+
+[profile.release]
+panic = "abort"
+opt-level = "s"
+lto = true
+codegen-units = 1

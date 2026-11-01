@@ -1,0 +1,24 @@
+--- a/components/bt/porting/mem/os_mempool.c
++++ b/components/bt/porting/mem/os_mempool.c
+@@ -203,6 +203,10 @@
+                 }
+             }
+         }
++#if MYNEWT_VAL(BLE_STATIC_TO_DYNAMIC)
++        /* Unregistering the last pool resets the registry initialization. */
++        os_mempool_list_ensure_init();
++#endif
+         STAILQ_INSERT_TAIL(&g_os_mempool_list, mp, mp_list);
+         return OS_OK;
+     }
+@@ -242,6 +246,10 @@
+         }
+     }
+ 
++#if MYNEWT_VAL(BLE_STATIC_TO_DYNAMIC)
++    /* Unregistering the last pool resets the registry initialization. */
++    os_mempool_list_ensure_init();
++#endif
+     STAILQ_INSERT_TAIL(&g_os_mempool_list, mp, mp_list);
+ 
+     return OS_OK;

@@ -1,0 +1,160 @@
+{
+  "commit": "8bc0525776efe779ef9592e0b91574cfbc91f60b",
+  "patches": [
+    {
+      "patch": "pocketjs-direct-font-subset.patch",
+      "sha256": "2b47513fa25f841f292b885a3e275474fd78b5a76f8727d2172fa8e2249ebe7c",
+      "files": [
+        {
+          "path": "engine/core/src/text.rs",
+          "before": "781091e24628cd633a54171bf2ee2d3fc1e05a52f4afa2217b6508839e98c3f8",
+          "after": "ef11917e27ff7e20369a5e0e2b3f3dbc3aedbd070544b2fa0fd475c8931cec2a"
+        },
+        {
+          "path": "engine/core/src/lib.rs",
+          "before": "df03595458f10280580103d1bc10095b87d8f656f30eca072972da419d6cded5",
+          "after": "056ae2ed98482e293fe4445e640d8877ed5eb4f734eac7b4ff946c24c8f708cb"
+        }
+      ]
+    },
+    {
+      "patch": "pocketjs-layout-capacity.patch",
+      "sha256": "38f74378bb808e62c86d1cc4f9b60bf1cbc9d90d2e04a5babfa448171c81340e",
+      "files": [
+        {
+          "path": "engine/core/src/lib.rs",
+          "before": "056ae2ed98482e293fe4445e640d8877ed5eb4f734eac7b4ff946c24c8f708cb",
+          "after": "ff4f0f69f9fe432dbfa6aa6f0e07c118797d5402f959c6c4b57e7d822990a2dd"
+        },
+        {
+          "path": "engine/core/src/layout.rs",
+          "before": "97587897bbe41f12249af92cc54b10548dd9196e309bf4c76dd1003ab6348995",
+          "after": "0c01b2f43cfc3bfd56b96b72548d2efc2d163cc2d2c9c2d153ee6986937809ff"
+        }
+      ]
+    },
+    {
+      "patch": "pocketjs-static-font-subset.patch",
+      "sha256": "2e58e1e84177705650f2697d9fb89bdaa4407efacbadcf28eb39d8ac9fbead10",
+      "files": [
+        {
+          "path": "engine/core/src/text.rs",
+          "before": "ef11917e27ff7e20369a5e0e2b3f3dbc3aedbd070544b2fa0fd475c8931cec2a",
+          "after": "8462cec5379cbfa5c9097005a37ba7f49b06b0d757c5ce460fc5de482c296de2"
+        },
+        {
+          "path": "engine/core/src/lib.rs",
+          "before": "ff4f0f69f9fe432dbfa6aa6f0e07c118797d5402f959c6c4b57e7d822990a2dd",
+          "after": "6a4704a74f28f74b6b97c5ab0c8feee8a4b42c7326500a253c99aa17bc676f14"
+        },
+        {
+          "path": "engine/core/src/resources.rs",
+          "before": "d6c05d465efba96f70934bcd2954f009909f4d03e7aba8acf7441b645295bb48",
+          "after": "7751544eaa8105b695ab1eb3a4bac96f909b4b87332cc6adb9b03117e435b202"
+        },
+        {
+          "path": "engine/core/src/font_pages.rs",
+          "before": "98dec7135b12873ceb2bf59732cf9f2a403eb2c916c18f35f984563ccb8bcbc0",
+          "after": "e5f3323cf69d83d8d5de6cbc67f88879e3c4c10b4b39828a251116926b49e405"
+        },
+        {
+          "path": "engine/core/src/font_stream.rs",
+          "before": "ee3164682ceba185c17245dd23b85389675faa1d92d3f383901c04419aee3226",
+          "after": "8286ebb9393b18a490c1f77454e33c7e672012f8c21c522894ff3d24e7070372"
+        }
+      ]
+    },
+    {
+      "patch": "pocketjs-mono-font-atlas.patch",
+      "sha256": "2d915983d12f560ccbadafb44f3ddf06ba39d793598630e5d6e3d71490fc9984",
+      "files": [
+        {
+          "path": "engine/spec/src/lib.rs",
+          "before": "94eee508b0ae80715b906b6d63357a371b61e9a86a4076f37075da87c07e8c93",
+          "after": "08075a6985d7c345a2cc2c2cc25368ba2abf5f97f11ed22f6ff6309db0e199b6"
+        },
+        {
+          "path": "contracts/spec/spec.ts",
+          "before": "5e2db4b68b3124d945425729497d11e188ca1f37b4d6230889bc2ac85d089cf6",
+          "after": "068cdfad1feeb8b05296ff50cf0ed09a542adf08160c463a5e311176bb544be5"
+        },
+        {
+          "path": "engine/core/src/text.rs",
+          "before": "8462cec5379cbfa5c9097005a37ba7f49b06b0d757c5ce460fc5de482c296de2",
+          "after": "7d2a14b00cd5e051b24a5b5caec366b6764cd47d7c1d04fff981d8cf80e993fa"
+        },
+        {
+          "path": "engine/core/src/resources.rs",
+          "before": "7751544eaa8105b695ab1eb3a4bac96f909b4b87332cc6adb9b03117e435b202",
+          "after": "91b51386e6a7bdc20afd44a43d8c746031b42666b1d946aac3e06c77474a1c5c"
+        },
+        {
+          "path": "engine/core/src/font_pages.rs",
+          "before": "e5f3323cf69d83d8d5de6cbc67f88879e3c4c10b4b39828a251116926b49e405",
+          "after": "785d2ae2ef4e226f307c6e0202cc18b56fab1f0a46f8fa9839b0b292ae9b5a2f"
+        },
+        {
+          "path": "engine/core/src/font_stream.rs",
+          "before": "8286ebb9393b18a490c1f77454e33c7e672012f8c21c522894ff3d24e7070372",
+          "after": "e40fdd483a39b9df5fd2cd2827b581fc25e0005d98e6f6ce07607823acb39d8e"
+        },
+        {
+          "path": "engine/drivers/src/resources.rs",
+          "before": "1dd61e19b4b157986f4fae4855cb82b8acbc5d75103df04bdc291f578d47c254",
+          "after": "a6736fac077372c25fc305a9d5d8183991763a799ab6340542347c0da40b46e1"
+        },
+        {
+          "path": "engine/raster/src/lib.rs",
+          "before": "8654921dc26aa80b52e0f7daaf50351eb5e8993eb8bf5f6a1ceaddf5d8f522dd",
+          "after": "4818038b2392ded029ed53042a6c8c5c30928784da29630f68550f450774e2fd"
+        },
+        {
+          "path": "framework/compiler/bake-font.ts",
+          "before": "1d5c0a326fbd777d32f5a5b959aafe3be5e0d3d5154ccec775856fb0227e4419",
+          "after": "d1fbef1e841468fbb22a2945d2e3f698f5c60bb8b01bd014999065ef4f6e8cfd"
+        },
+        {
+          "path": "engine/raster/tests/driver.rs",
+          "before": "38ddb55c857410b801a4ea46bed75208d429837dc996beb3a87c7e1a91dd88dc",
+          "after": "d435dc1bdbe4ca27a654e4e91c94aece1a271b41bc5bcb6d84f71ce08d3b80a1"
+        }
+      ]
+    },
+    {
+      "patch": "pocketjs-dependencies.patch",
+      "sha256": "9597126270d0d4f16a9683655adf6d75b65e67c334e34673411d8b7e15615372",
+      "files": [
+        {
+          "path": "Cargo.lock",
+          "before": "a84295d273342681994c1ea700bd4622e61d44637dce54f268e9d1d28ae2a572",
+          "after": "74335494d643a7047dc53cac0debfacfda9de3403d95654049cdd13f33281971"
+        },
+        {
+          "path": "engine/core/Cargo.toml",
+          "before": "587f08937c947a37c4bcff30016f19141915c6fbf2b4d61b5992b2a4a16c40a7",
+          "after": "19dc01816d8dda28b498302b459c3c765dc1bb20dd3195449a68c3c997ce4237"
+        },
+        {
+          "path": "engine/crates/microts/Cargo.toml",
+          "before": "216dffff70c61d1e7f2c6e26eb9755f12489605108f7cd692c957f4641545481",
+          "after": "aa49875f519b7f58bee68d9ed3f28e3684985f384abb653de7d391e016d5c970"
+        },
+        {
+          "path": "engine/core/src/layout.rs",
+          "before": "0c01b2f43cfc3bfd56b96b72548d2efc2d163cc2d2c9c2d153ee6986937809ff",
+          "after": "f9453f0d7d53ac49ffe2ee24da1a2b70bb3c2d095d45cfa733b9b2531fa40581"
+        },
+        {
+          "path": "package.json",
+          "before": "e8cb867ce7906ad14aa6d90d3e2d630eb56d6c3bdbafa49615d9e4f98a5032b6",
+          "after": "2bc896e3c32a4bcfdb8d5a7a1f23a403713846d97f871cf419062e2a6f78da92"
+        },
+        {
+          "path": "bun.lock",
+          "before": "abaed0ade1e8852164ab48ba3c162641557261415563764a615e5ebc9b120885",
+          "after": "8c49240b8fc174ef867d7301c20d7962e3cd1c6eb6d7746b0226850daa7b6379"
+        }
+      ]
+    }
+  ]
+}

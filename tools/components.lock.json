@@ -1,0 +1,32 @@
+{
+  "network_provisioning": {
+    "version": "1.4.0",
+    "sourceCommit": "c492b27913079a61f05fa738903f33709f925e6c",
+    "url": "https://components-file.espressif.com/components/espressif/network_provisioning/1.4.0/espressif__network_provisioning-v1.4.0.zip",
+    "sha256": "6e81719e22a1485c3d617e8512a1eff356c333ab3ea0eae3222b2a88d9fd12ad",
+    "patches": [
+      {
+        "patch": "patches/network-provisioning-1.4.0-stop-lifecycle.patch",
+        "sha256": "263efd1d29791d3ca5bdceb055342c55063421a1d265eb72e1d2c70055d2eaef",
+        "files": [
+          {
+            "path": "src/manager.c",
+            "before": "813986b1005aaca1c6f77523e028a3269b313ddcac5d68fa11cd2e9ecc684fa0",
+            "after": "24f54eb2d071c572c6c1c4f2eb25690c3ef8b864d1670d290bb623970075ded8"
+          },
+          {
+            "path": "include/network_provisioning/manager.h",
+            "before": "2eea7435caaad8b717d33811f9dddee768d7a8c86a643c2d8cf80d430559fd79",
+            "after": "9516dbd20bd8ba12c35bfdd82045c6b8d73eecc125f2df8ea8eb00429d497246"
+          }
+        ]
+      }
+    ]
+  },
+  "json_generator": {
+    "version": "2.1.0",
+    "sourceCommit": "0e17e634b2236848fcbbd30bba0f8d4d357e5195",
+    "url": "https://components-file.espressif.com/components/espressif/json_generator/2.1.0/espressif__json_generator-v2.1.0.zip",
+    "sha256": "a7d9ae8464f98d6c34b1ed46ba47baa6e05c4e05f99b9aa7003bedeef8f67ac2"
+  }
+}

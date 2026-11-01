@@ -1,0 +1,22 @@
+menu "Balabala diagnostics"
+    config BALABALA_AUTOTEST
+        bool "Unattended isolated diagnostic"
+        default n
+        help
+            Fixed phase 1 learning/storage or phase 2 BLE script with exclusive SD root.
+            Phase 2 uses RAM Wi-Fi storage and never restarts. No ROM script.
+            Diagnostic images are not delivery images.
+    config BALABALA_AUTOTEST_PHASE
+        int "Diagnostic phase"
+        depends on BALABALA_AUTOTEST
+        range 1 2
+        default 1
+    config BALABALA_MEMORY_DIAGNOSTICS
+        bool "Log memory at application stage boundaries"
+        default n
+        help
+            Samples INTERNAL|8BIT free/minimum/largest block and the main task
+            stack watermark. Largest-block and watermark queries scan memory;
+            enable only for diagnosis. Stage samples can miss transient peaks.
+            Rust allocation failure records these values regardless of this flag.
+endmenu

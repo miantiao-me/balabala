@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "balabala:deck:1",
+  "title": "balabala 离线学习卡组 v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "min_format", "version", "id", "subject", "title", "cards"],
+  "properties": {
+    "schema": {"const": 1},
+    "min_format": {"const": 1},
+    "version": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+    "id": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"},
+    "subject": {"enum": ["hanzi", "pinyin", "english", "math"]},
+    "title": {"type": "string", "minLength": 1, "maxLength": 16},
+    "cards": {
+      "type": "array", "minItems": 1, "maxItems": 40,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "front", "back", "question", "options", "correct", "explanation"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"},
+          "front": {"type": "string", "minLength": 1, "maxLength": 12},
+          "back": {"type": "string", "minLength": 1, "maxLength": 64},
+          "question": {"type": "string", "minLength": 1, "maxLength": 32},
+          "options": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 16}},
+          "correct": {"type": "integer", "minimum": 0, "maximum": 3},
+          "explanation": {"type": "string", "minLength": 1, "maxLength": 64}
+        }
+      }
+    }
+  },
+  "$comment": "运行时另验UTF-8包≤65536字节、字段≤192字节、稳定ID唯一、已烘焙字形、按实际advance测量的显示宽度和行数；不加载可执行内容。"
+}

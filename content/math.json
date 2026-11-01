@@ -1,0 +1,458 @@
+{
+  "schema": 1,
+  "min_format": 1,
+  "version": 2,
+  "id": "math-demo",
+  "subject": "math",
+  "title": "数学小发现",
+  "cards": [
+    {
+      "id": "math-01",
+      "front": "1",
+      "back": "一只小兔，对应数字1。",
+      "question": "一只小兔用哪个数表示？",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct": 0,
+      "explanation": "一只就是1，可以伸出一根手指。"
+    },
+    {
+      "id": "math-02",
+      "front": "2",
+      "back": "两只袜子，对应数字2。",
+      "question": "两只袜子用哪个数表示？",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct": 1,
+      "explanation": "一双袜子有两只，就是2。"
+    },
+    {
+      "id": "math-03",
+      "front": "3",
+      "back": "三片叶子，对应数字3。",
+      "question": "三片叶子用哪个数表示？",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct": 2,
+      "explanation": "从1数到3，共有三片叶子。"
+    },
+    {
+      "id": "math-04",
+      "front": "4",
+      "back": "四条桌腿，对应数字4。",
+      "question": "四条桌腿用哪个数表示？",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct": 3,
+      "explanation": "一条一条数，共有4条桌腿。"
+    },
+    {
+      "id": "math-05",
+      "front": "5",
+      "back": "五根手指，对应数字5。",
+      "question": "一只手通常有几根手指？",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 0,
+      "explanation": "一只手通常有五根手指。"
+    },
+    {
+      "id": "math-06",
+      "front": "6",
+      "back": "六个积木，对应数字6。",
+      "question": "5个积木再添1个是几个？",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 1,
+      "explanation": "从5再往后数一个，就是6。"
+    },
+    {
+      "id": "math-07",
+      "front": "7",
+      "back": "七颗豆子，对应数字7。",
+      "question": "6颗豆子再添1颗是几颗？",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 2,
+      "explanation": "从6再往后数一个，就是7。"
+    },
+    {
+      "id": "math-08",
+      "front": "8",
+      "back": "八朵小花，对应数字8。",
+      "question": "7朵花再添1朵是几朵？",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 3,
+      "explanation": "从7再往后数一个，就是8。"
+    },
+    {
+      "id": "math-09",
+      "front": "9",
+      "back": "九个圆片，对应数字9。",
+      "question": "8个圆片再添1个是几个？",
+      "options": [
+        "9",
+        "8",
+        "7",
+        "6"
+      ],
+      "correct": 0,
+      "explanation": "从8再往后数一个，就是9。"
+    },
+    {
+      "id": "math-10",
+      "front": "10",
+      "back": "十根小棒，对应数字10。",
+      "question": "9根小棒再添1根是几根？",
+      "options": [
+        "9",
+        "10",
+        "8",
+        "7"
+      ],
+      "correct": 1,
+      "explanation": "从9再往后数一个，就是10。"
+    },
+    {
+      "id": "math-11",
+      "front": "1 + 1",
+      "back": "一块饼干再加一块，共两块。",
+      "question": "1 + 1等于多少？",
+      "options": [
+        "1",
+        "3",
+        "2",
+        "4"
+      ],
+      "correct": 2,
+      "explanation": "先有1块，再添1块，共有2块。"
+    },
+    {
+      "id": "math-12",
+      "front": "2 + 1",
+      "back": "两颗糖再加一颗，共三颗。",
+      "question": "2 + 1等于多少？",
+      "options": [
+        "1",
+        "2",
+        "4",
+        "3"
+      ],
+      "correct": 3,
+      "explanation": "从2往后数一个，得到3。"
+    },
+    {
+      "id": "math-13",
+      "front": "2 + 2",
+      "back": "两双袜子，一共有四只。",
+      "question": "2 + 2等于多少？",
+      "options": [
+        "4",
+        "3",
+        "5",
+        "2"
+      ],
+      "correct": 0,
+      "explanation": "两只加两只，一共四只。"
+    },
+    {
+      "id": "math-14",
+      "front": "3 + 2",
+      "back": "三片叶子再添两片，共五片。",
+      "question": "3 + 2等于多少？",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "3"
+      ],
+      "correct": 1,
+      "explanation": "从3往后数两次，4、5，得到5。"
+    },
+    {
+      "id": "math-15",
+      "front": "4 + 2",
+      "back": "四个圆片再添两个，共六个。",
+      "question": "4 + 2等于多少？",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correct": 2,
+      "explanation": "从4往后数两次，5、6，得到6。"
+    },
+    {
+      "id": "math-16",
+      "front": "5 + 3",
+      "back": "五颗豆子再添三颗，共八颗。",
+      "question": "5 + 3等于多少？",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 3,
+      "explanation": "从5往后数三次，6、7、8。"
+    },
+    {
+      "id": "math-17",
+      "front": "3 - 1",
+      "back": "三个苹果拿走一个，还剩两个。",
+      "question": "3 - 1等于多少？",
+      "options": [
+        "2",
+        "1",
+        "3",
+        "4"
+      ],
+      "correct": 0,
+      "explanation": "三个拿走一个，还剩两个。"
+    },
+    {
+      "id": "math-18",
+      "front": "5 - 2",
+      "back": "五块积木拿走两块，还剩三块。",
+      "question": "5 - 2等于多少？",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correct": 1,
+      "explanation": "从5倒数两次，4、3，还剩3。"
+    },
+    {
+      "id": "math-19",
+      "front": "6 - 2",
+      "back": "六朵小花拿走两朵，还剩四朵。",
+      "question": "6 - 2等于多少？",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correct": 2,
+      "explanation": "从6倒数两次，5、4，还剩4。"
+    },
+    {
+      "id": "math-20",
+      "front": "10 - 5",
+      "back": "十根小棒拿走五根，还剩五根。",
+      "question": "10 - 5等于多少？",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correct": 3,
+      "explanation": "十根分成两个五根，拿走一份剩五根。"
+    },
+    {
+      "id": "math-21",
+      "front": "1 + 2",
+      "back": "一个苹果再添两个，共三个。",
+      "question": "1加2等于几？",
+      "options": [
+        "3",
+        "2",
+        "4",
+        "5"
+      ],
+      "correct": 0,
+      "explanation": "从1往后数两次，2、3，得到3。"
+    },
+    {
+      "id": "math-22",
+      "front": "1 + 3",
+      "back": "一个积木再添三个，共四个。",
+      "question": "1加3等于几？",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correct": 1,
+      "explanation": "从1往后数三次，2、3、4，得到4。"
+    },
+    {
+      "id": "math-23",
+      "front": "2 + 3",
+      "back": "两片叶子再添三片，共五片。",
+      "question": "2加3等于几？",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correct": 2,
+      "explanation": "两片和三片合起来，一共五片。"
+    },
+    {
+      "id": "math-24",
+      "front": "3 + 3",
+      "back": "三个积木再添三个，共六个。",
+      "question": "3加3等于几？",
+      "options": [
+        "4",
+        "5",
+        "7",
+        "6"
+      ],
+      "correct": 3,
+      "explanation": "三个和三个合起来，一共六个。"
+    },
+    {
+      "id": "math-25",
+      "front": "4 + 3",
+      "back": "四个苹果再添三个，共七个。",
+      "question": "4加3等于几？",
+      "options": [
+        "7",
+        "6",
+        "8",
+        "9"
+      ],
+      "correct": 0,
+      "explanation": "从4往后数三次，5、6、7，得到7。"
+    },
+    {
+      "id": "math-26",
+      "front": "4 + 4",
+      "back": "四片叶子再添四片，共八片。",
+      "question": "4加4等于几？",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "6"
+      ],
+      "correct": 1,
+      "explanation": "四片和四片合起来，一共八片。"
+    },
+    {
+      "id": "math-27",
+      "front": "5 + 4",
+      "back": "五个积木再添四个，共九个。",
+      "question": "5加4等于几？",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "correct": 2,
+      "explanation": "从5往后数四次，6、7、8、9，得到9。"
+    },
+    {
+      "id": "math-28",
+      "front": "5 + 5",
+      "back": "五个苹果再添五个，共十个。",
+      "question": "5加5等于几？",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "correct": 3,
+      "explanation": "五个和五个合起来，一共十个。"
+    },
+    {
+      "id": "math-29",
+      "front": "4 - 1",
+      "back": "四个苹果拿走一个，还剩三个。",
+      "question": "4减1等于几？",
+      "options": [
+        "3",
+        "2",
+        "4",
+        "5"
+      ],
+      "correct": 0,
+      "explanation": "从4往前数一次，得到3。"
+    },
+    {
+      "id": "math-30",
+      "front": "6 - 1",
+      "back": "六个积木拿走一个，还剩五个。",
+      "question": "6减1等于几？",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "3"
+      ],
+      "correct": 1,
+      "explanation": "从6往前数一次，得到5。"
+    },
+    {
+      "id": "math-31",
+      "front": "7 - 2",
+      "back": "七片叶子拿走两片，还剩五片。",
+      "question": "7减2等于几？",
+      "options": [
+        "4",
+        "6",
+        "5",
+        "3"
+      ],
+      "correct": 2,
+      "explanation": "从7往前数两次，6、5，得到5。"
+    },
+    {
+      "id": "math-32",
+      "front": "9 - 3",
+      "back": "九个积木拿走三个，还剩六个。",
+      "question": "9减3等于几？",
+      "options": [
+        "5",
+        "7",
+        "8",
+        "6"
+      ],
+      "correct": 3,
+      "explanation": "从9往前数三次，8、7、6，得到6。"
+    }
+  ]
+}

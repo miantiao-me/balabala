@@ -1,0 +1,24 @@
+Rust core / alloc — 1.99.1
+==========================
+
+Copyright: The Rust Project Developers (see https://thanks.rust-lang.org)
+License: Apache-2.0 OR MIT
+
+This distribution uses core and alloc under the Apache License, Version 2.0.
+The complete license text is provided in the repository root LICENSE and
+licenses/LICENSE-esp-idf.txt.
+
+In-tree exception:
+  File/Directory: library/core/src/unicode
+  Copyright: 1991-2024 Unicode, Inc
+  License: Unicode-3.0
+  Exception within this directory: mod.rs remains Apache-2.0 OR MIT,
+  Copyright: The Rust Project Developers (see https://thanks.rust-lang.org).
+
+The complete Unicode License V3 text is provided in
+licenses/Unicode-License-V3.txt.
+
+Source of these notices: the fixed Rust 1.99.1 toolchain's
+share/doc/rust/COPYRIGHT-library.html, entries for the tree root and
+library/core/src/unicode. The installed toolchain and generated HTML remain
+outside version control under .tools/rustup/toolchains/.
